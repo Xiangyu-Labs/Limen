@@ -23,9 +23,13 @@ ENV DATABASE_URL=sqlite:///./data/limen.db
 COPY package.json package-lock.json ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+COPY --chmod=755 docker-entrypoint.sh ./
 
 RUN mkdir -p /app/data
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npm run db:push && npm run start -- --hostname 0.0.0.0 --port ${PORT:-3000}"]
+CMD ["./docker-entrypoint.sh"]
