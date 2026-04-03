@@ -1,0 +1,19 @@
+services:
+  limen:
+    build:
+      context: .
+    ports:
+      - "3000:3000"
+    environment:
+      AUTH_PASSWORD: ${AUTH_PASSWORD}
+      SESSION_SECRET: ${SESSION_SECRET}
+      AI_BASE_URL: ${AI_BASE_URL}
+      AI_API_KEY: ${AI_API_KEY}
+      AI_MODEL: ${AI_MODEL}
+      DATABASE_URL: ${DATABASE_URL:-sqlite:///./data/limen.db}
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

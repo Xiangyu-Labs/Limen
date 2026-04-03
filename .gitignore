@@ -1,0 +1,62 @@
+# Workspace helpers
+.worktrees/
+
+# Documentation
+docs/
+
+# Dependencies
+node_modules/
+.pnp/
+.pnp.*
+node_modules/.package-lock.json
+
+# Next.js / frontend build output
+.next/
+out/
+dist/
+build/
+.turbo/
+coverage/
+next-env.d.ts
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.local
+.env.*
+!.env.example
+
+# Local data and databases
+data/
+*.db
+*.db-journal
+*.db.bak
+*.db-shm
+*.db-wal
+
+# Legacy Python caches
+__pycache__/
+.pytest_cache/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
