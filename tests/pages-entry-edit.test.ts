@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 test("edit entry form model maps entry fields to editable values", async () => {
-  const { buildEditEntryFormModel } = await import("../src/app/(dashboard)/entries/[id]/edit/page");
+  const { buildEditEntryFormModel } = await import("../src/app/[locale]/(dashboard)/entries/[id]/edit/page");
   const model = buildEditEntryFormModel({
     id: "entry-1",
     title: "Title",

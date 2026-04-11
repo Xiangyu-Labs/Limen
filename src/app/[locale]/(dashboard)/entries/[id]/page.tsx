@@ -9,43 +9,52 @@ import { deleteEntry, regenerateEntryMetadata } from '@/lib/actions/entries';
 import { FormattedDate } from '@/components/FormattedDate';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import type { Locale } from '@/lib/i18n/config';
+import { getMessages } from '@/lib/i18n/getMessages';
+import { dashboardPath, entryEditPath } from '@/lib/i18n/pathname';
 
-export function buildEntryDetailViewModel(entry: {
-  content: string;
-  title: string | null;
-  summary: string | null;
-  tags: string | null;
-  aiStatus: string | null;
-  createdAt: Date | null;
-}) {
+export function buildEntryDetailViewModel(
+  entry: {
+    content: string;
+    title: string | null;
+    summary: string | null;
+    tags: string | null;
+    aiStatus: string | null;
+    createdAt: Date | null;
+  },
+  messages: ReturnType<typeof getMessages>
+) {
   return {
     ...entry,
-    displayTitle: entry.title || 'Untitled Capture',
+    displayTitle: entry.title || messages.editor.untitledCapture,
     summary: entry.aiStatus === 'done' ? entry.summary : null,
-    tags: entry.tags ? JSON.parse(entry.tags) as string[] : [],
+    tags: entry.tags ? (JSON.parse(entry.tags) as string[]) : [],
     showAIEnhancedBadge: entry.aiStatus === 'done',
     statusLabel:
       entry.aiStatus === 'done'
-        ? 'AI Enhanced'
+        ? messages.entryDetail.aiEnhanced
         : entry.aiStatus === 'failed'
-          ? 'Needs review'
-          : 'Processing',
+          ? messages.common.needsReview
+          : messages.common.processing,
     statusTone:
       entry.aiStatus === 'done'
         ? 'success'
         : entry.aiStatus === 'failed'
           ? 'danger'
           : 'warning',
-    regenerateLabel: 'Regenerate AI Metadata',
+    regenerateLabel: messages.entryDetail.regenerateMetadata,
   };
 }
 
 export default async function EntryDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; locale: string }>;
 }) {
-  const { id } = await params;
+  const { id, locale: localeParam } = await params;
+  const locale = localeParam as Locale;
+  const messages = getMessages(locale);
+
   const entry = await db.query.entries.findFirst({
     where: eq(entries.id, id),
   });
@@ -54,20 +63,20 @@ export default async function EntryDetailPage({
     notFound();
   }
 
-  const viewModel = buildEntryDetailViewModel(entry);
+  const viewModel = buildEntryDetailViewModel(entry, messages);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" asChild className="-ml-2 text-muted hover:text-primary">
-          <Link href="/">
+          <Link href={dashboardPath(locale)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            <span className="text-[10px] font-bold uppercase tracking-widest">Timeline</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest">{messages.common.timeline}</span>
           </Link>
         </Button>
 
         <div className="flex items-center gap-2">
-          <form action={regenerateEntryMetadata.bind(null, id)}>
+          <form action={regenerateEntryMetadata.bind(null, locale, id)}>
             <Button
               variant="secondary"
               size="sm"
@@ -80,13 +89,13 @@ export default async function EntryDetailPage({
           </form>
 
           <Button variant="ghost" size="sm" asChild className="text-muted hover:text-primary">
-            <Link href={`/entries/${id}/edit`}>
+            <Link href={entryEditPath(locale, id)}>
               <Pencil className="h-4 w-4 mr-2" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Edit</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest">{messages.common.edit}</span>
             </Link>
           </Button>
 
-          <form action={deleteEntry.bind(null, id)}>
+          <form action={deleteEntry.bind(null, locale, id)}>
             <Button
               variant="ghost"
               size="sm"
@@ -94,7 +103,7 @@ export default async function EntryDetailPage({
               className="text-muted hover:text-danger hover:bg-danger/10"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Delete</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest">{messages.common.delete}</span>
             </Button>
           </form>
         </div>
@@ -106,11 +115,11 @@ export default async function EntryDetailPage({
             <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
               <div className="flex items-center gap-2 rounded-full bg-surface2 px-3 py-1.5">
                 <Calendar className="h-3.5 w-3.5" />
-                <FormattedDate date={entry.createdAt!} type="full" />
+                <FormattedDate date={entry.createdAt!} type="full" locale={locale} />
               </div>
               <div className="flex items-center gap-2 rounded-full bg-surface2 px-3 py-1.5">
                 <Clock className="h-3.5 w-3.5" />
-                <FormattedDate date={entry.createdAt!} type="time" />
+                <FormattedDate date={entry.createdAt!} type="time" locale={locale} />
               </div>
               <div className={`flex items-center gap-2 rounded-full px-3 py-1.5 ${
                 viewModel.statusTone === 'success' ? 'bg-primary/10 text-primary' : 'bg-warning/10 text-warning'
@@ -127,7 +136,7 @@ export default async function EntryDetailPage({
 
               {viewModel.summary && (
                 <div className="rounded-[var(--radius-xl)] border border-primary/15 bg-primary/5 p-6">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-primary">AI Summary</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-primary">{messages.entryDetail.aiSummary}</p>
                   <p className="mt-3 text-sm text-text/80 leading-relaxed italic">
                     {viewModel.summary}
                   </p>

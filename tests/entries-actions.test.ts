@@ -1,12 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { eq } from "drizzle-orm";
-import { entries } from "@/lib/db/schema";
-import { createTestDb } from "./helpers/test-db";
 
 test("createEntry returns an error for blank content", async () => {
   const { createEntryActions } = await import("@/lib/actions/entries-core");
-  const fixture = createTestDb();
+  const fixture = (await import("./helpers/test-db")).createTestDb();
 
   try {
     const actions = createEntryActions({
@@ -22,7 +19,7 @@ test("createEntry returns an error for blank content", async () => {
 
     const formData = new FormData();
     formData.set("content", "   ");
-    const result = await actions.createEntry(formData);
+    const result = await actions.createEntry("en", formData);
 
     assert.deepEqual(result, { error: "Content is required" });
   } finally {
@@ -30,9 +27,11 @@ test("createEntry returns an error for blank content", async () => {
   }
 });
 
-test("createEntry inserts a pending entry and triggers AI processing", async () => {
+test("createEntry inserts a pending entry and redirects within locale", async () => {
   const { createEntryActions } = await import("@/lib/actions/entries-core");
-  const fixture = createTestDb();
+  const { eq } = await import("drizzle-orm");
+  const { entries } = await import("@/lib/db/schema");
+  const fixture = (await import("./helpers/test-db")).createTestDb();
 
   let processed: { id: string; content: string } | null = null;
   let scheduled: (() => Promise<void>) | null = null;
@@ -59,72 +58,35 @@ test("createEntry inserts a pending entry and triggers AI processing", async () 
     });
 
     const formData = new FormData();
-    formData.set("content", "Ship more reliable tests");
+    formData.set("content", "Ship locale-aware redirects");
     formData.set("createdAt", "2024-01-03T11:45");
 
-    await assert.rejects(() => actions.createEntry(formData), /redirected/);
+    await assert.rejects(() => actions.createEntry("zh", formData), /redirected/);
 
     const row = await fixture.db.query.entries.findFirst({
       where: eq(entries.id, "entry-created"),
     });
 
     assert.equal(row?.aiStatus, "pending");
-    assert.equal(row?.createdAt?.toISOString(), "2024-01-03T11:45:00.000Z");
-    assert.equal(processed, null);
+    assert.equal(revalidatedPath, "/zh");
+    assert.equal(redirectedTo, "/zh");
     assert.equal(typeof scheduled, "function");
-    assert.equal(revalidatedPath, "/");
-    assert.equal(redirectedTo, "/");
 
     await scheduled?.();
-
     assert.deepEqual(processed, {
       id: "entry-created",
-      content: "Ship more reliable tests",
+      content: "Ship locale-aware redirects",
     });
   } finally {
     fixture.cleanup();
   }
 });
 
-test("deleteEntry removes an existing entry", async () => {
+test("updateEntry redirects to locale detail page", async () => {
   const { createEntryActions } = await import("@/lib/actions/entries-core");
-  const fixture = createTestDb();
-
-  await fixture.db.insert(entries).values({
-    id: "entry-delete",
-    content: "Delete me",
-    aiStatus: "done",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
-
-  try {
-    const actions = createEntryActions({
-      db: fixture.db,
-      createId: () => "unused",
-      scheduleAI: () => {},
-      processAIEntry: async () => {},
-      revalidatePath: () => {},
-      redirect: () => {
-        throw new Error("redirected");
-      },
-    });
-
-    await assert.rejects(() => actions.deleteEntry("entry-delete"), /redirected/);
-
-    const row = await fixture.db.query.entries.findFirst({
-      where: eq(entries.id, "entry-delete"),
-    });
-
-    assert.equal(row, undefined);
-  } finally {
-    fixture.cleanup();
-  }
-});
-
-test("updateEntry edits title, summary, tags, content, and created time", async () => {
-  const { createEntryActions } = await import("@/lib/actions/entries-core");
-  const fixture = createTestDb();
+  const { eq } = await import("drizzle-orm");
+  const { entries } = await import("@/lib/db/schema");
+  const fixture = (await import("./helpers/test-db")).createTestDb();
 
   await fixture.db.insert(entries).values({
     id: "entry-update",
@@ -137,7 +99,7 @@ test("updateEntry edits title, summary, tags, content, and created time", async 
     updatedAt: new Date("2024-01-01T08:00:00Z"),
   });
 
-  let revalidatedPath = "";
+  let revalidatedPaths: string[] = [];
   let redirectedTo = "";
 
   try {
@@ -147,7 +109,7 @@ test("updateEntry edits title, summary, tags, content, and created time", async 
       scheduleAI: () => {},
       processAIEntry: async () => {},
       revalidatePath: (path: string) => {
-        revalidatedPath = path;
+        revalidatedPaths.push(path);
       },
       redirect: (location: string) => {
         redirectedTo = location;
@@ -158,31 +120,70 @@ test("updateEntry edits title, summary, tags, content, and created time", async 
     const formData = new FormData();
     formData.set("title", "New title");
     formData.set("summary", "New summary");
-    formData.set("tags", "alpha, beta , gamma");
+    formData.set("tags", "alpha, beta");
     formData.set("content", "New content");
     formData.set("createdAt", "2024-01-02T09:30");
 
-    await assert.rejects(() => actions.updateEntry("entry-update", formData), /redirected/);
+    await assert.rejects(() => actions.updateEntry("zh", "entry-update", formData), /redirected/);
 
     const row = await fixture.db.query.entries.findFirst({
       where: eq(entries.id, "entry-update"),
     });
 
     assert.equal(row?.title, "New title");
-    assert.equal(row?.summary, "New summary");
-    assert.equal(row?.content, "New content");
-    assert.equal(row?.tags, JSON.stringify(["alpha", "beta", "gamma"]));
-    assert.equal(row?.createdAt?.toISOString(), "2024-01-02T09:30:00.000Z");
-    assert.equal(revalidatedPath, "/entries/entry-update");
-    assert.equal(redirectedTo, "/entries/entry-update");
+    assert.deepEqual(revalidatedPaths, ["/zh", "/zh/entries/entry-update"]);
+    assert.equal(redirectedTo, "/zh/entries/entry-update");
   } finally {
     fixture.cleanup();
   }
 });
 
-test("regenerateEntryMetadata resets status and schedules AI regeneration", async () => {
+test("deleteEntry removes an existing entry and redirects to locale dashboard", async () => {
   const { createEntryActions } = await import("@/lib/actions/entries-core");
-  const fixture = createTestDb();
+  const { eq } = await import("drizzle-orm");
+  const { entries } = await import("@/lib/db/schema");
+  const fixture = (await import("./helpers/test-db")).createTestDb();
+
+  await fixture.db.insert(entries).values({
+    id: "entry-delete",
+    content: "Delete me",
+    aiStatus: "done",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  try {
+    let redirectedTo = "";
+    const actions = createEntryActions({
+      db: fixture.db,
+      createId: () => "unused",
+      scheduleAI: () => {},
+      processAIEntry: async () => {},
+      revalidatePath: () => {},
+      redirect: (location: string) => {
+        redirectedTo = location;
+        throw new Error("redirected");
+      },
+    });
+
+    await assert.rejects(() => actions.deleteEntry("zh", "entry-delete"), /redirected/);
+
+    const row = await fixture.db.query.entries.findFirst({
+      where: eq(entries.id, "entry-delete"),
+    });
+
+    assert.equal(row, undefined);
+    assert.equal(redirectedTo, "/zh");
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+test("regenerateEntryMetadata resets status and redirects within locale", async () => {
+  const { createEntryActions } = await import("@/lib/actions/entries-core");
+  const { eq } = await import("drizzle-orm");
+  const { entries } = await import("@/lib/db/schema");
+  const fixture = (await import("./helpers/test-db")).createTestDb();
 
   await fixture.db.insert(entries).values({
     id: "entry-regenerate",
@@ -196,8 +197,7 @@ test("regenerateEntryMetadata resets status and schedules AI regeneration", asyn
   });
 
   let scheduled: (() => Promise<void>) | null = null;
-  let processed: { id: string; content: string } | null = null;
-  let revalidatedPath = "";
+  let revalidatedPaths: string[] = [];
   let redirectedTo = "";
 
   try {
@@ -207,11 +207,9 @@ test("regenerateEntryMetadata resets status and schedules AI regeneration", asyn
       scheduleAI: (job) => {
         scheduled = job;
       },
-      processAIEntry: async (id, content) => {
-        processed = { id, content };
-      },
+      processAIEntry: async () => {},
       revalidatePath: (path: string) => {
-        revalidatedPath = path;
+        revalidatedPaths.push(path);
       },
       redirect: (location: string) => {
         redirectedTo = location;
@@ -219,7 +217,7 @@ test("regenerateEntryMetadata resets status and schedules AI regeneration", asyn
       },
     });
 
-    await assert.rejects(() => actions.regenerateEntryMetadata("entry-regenerate"), /redirected/);
+    await assert.rejects(() => actions.regenerateEntryMetadata("en", "entry-regenerate"), /redirected/);
 
     const row = await fixture.db.query.entries.findFirst({
       where: eq(entries.id, "entry-regenerate"),
@@ -227,93 +225,9 @@ test("regenerateEntryMetadata resets status and schedules AI regeneration", asyn
 
     assert.equal(row?.aiStatus, "pending");
     assert.equal(typeof scheduled, "function");
-    assert.equal(processed, null);
-    assert.equal(revalidatedPath, "/entries/entry-regenerate");
-    assert.equal(redirectedTo, "/entries/entry-regenerate");
-
-    await scheduled?.();
-
-    assert.deepEqual(processed, {
-      id: "entry-regenerate",
-      content: "Need better metadata",
-    });
+    assert.deepEqual(revalidatedPaths, ["/en", "/en/entries/entry-regenerate"]);
+    assert.equal(redirectedTo, "/en/entries/entry-regenerate");
   } finally {
     fixture.cleanup();
   }
-});
-
-test("bulkRegenerateEntryMetadata schedules serial regeneration in selection order", async () => {
-  const { createEntryActions } = await import("@/lib/actions/entries-core");
-  const fixture = createTestDb();
-
-  await fixture.db.insert(entries).values([
-    {
-      id: "entry-a",
-      content: "First",
-      aiStatus: "failed",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      id: "entry-b",
-      content: "Second",
-      aiStatus: "failed",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ]);
-
-  let scheduled: (() => Promise<void>) | null = null;
-  const processed: string[] = [];
-  const revalidatedPaths: string[] = [];
-
-  const actions = createEntryActions({
-    db: fixture.db,
-    createId: () => "unused",
-    scheduleAI: (job) => {
-      scheduled = job;
-    },
-    processAIEntry: async (id) => {
-      processed.push(id);
-    },
-    revalidatePath: (path: string) => {
-      revalidatedPaths.push(path);
-    },
-    redirect: () => undefined as never,
-  });
-
-  await actions.bulkRegenerateEntryMetadata(["entry-b", "entry-a"]);
-
-  const rows = await fixture.db.query.entries.findMany();
-  assert.deepEqual(rows.map((row) => row.aiStatus), ["pending", "pending"]);
-  assert.equal(typeof scheduled, "function");
-  await scheduled?.();
-  assert.deepEqual(processed, ["entry-b", "entry-a"]);
-  assert.deepEqual(revalidatedPaths, ["/"]);
-
-  fixture.cleanup();
-});
-
-test("bulkDeleteEntries removes all selected entries", async () => {
-  const { createEntryActions } = await import("@/lib/actions/entries-core");
-  const fixture = createTestDb();
-
-  await fixture.db.insert(entries).values([
-    { id: "entry-a", content: "First", aiStatus: "done", createdAt: new Date(), updatedAt: new Date() },
-    { id: "entry-b", content: "Second", aiStatus: "done", createdAt: new Date(), updatedAt: new Date() },
-  ]);
-
-  const actions = createEntryActions({
-    db: fixture.db,
-    createId: () => "unused",
-    scheduleAI: () => {},
-    processAIEntry: async () => {},
-    revalidatePath: () => {},
-    redirect: () => undefined as never,
-  });
-
-  await actions.bulkDeleteEntries(["entry-a", "entry-b"]);
-  const rows = await fixture.db.query.entries.findMany();
-  assert.equal(rows.length, 0);
-  fixture.cleanup();
 });

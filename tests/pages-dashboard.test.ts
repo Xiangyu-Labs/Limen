@@ -1,16 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { getMessages } from "../src/lib/i18n/getMessages";
 
 test("dashboard view model exposes empty state copy", async () => {
-  const { buildDashboardViewModel } = await import("@/app/(dashboard)/page");
-  const model = buildDashboardViewModel([], undefined);
+  const { buildDashboardViewModel } = await import("@/app/[locale]/(dashboard)/page");
+  const messages = getMessages('en');
+  const model = buildDashboardViewModel([], messages, undefined);
 
   assert.equal(model.heading, "Timeline");
   assert.equal(model.emptyMessage, "No entries found. Start capturing your thoughts.");
 });
 
 test("dashboard view model marks pending entries as processing", async () => {
-  const { buildDashboardViewModel } = await import("@/app/(dashboard)/page");
+  const { buildDashboardViewModel } = await import("@/app/[locale]/(dashboard)/page");
+  const messages = getMessages('en');
   const model = buildDashboardViewModel([
     {
       id: "1",
@@ -21,7 +24,7 @@ test("dashboard view model marks pending entries as processing", async () => {
       aiStatus: "pending",
       createdAt: new Date(),
     } as never,
-  ], undefined);
+  ], messages, undefined);
 
   assert.equal(model.entries[0].statusLabel, "Processing");
   assert.equal(model.entries[0].statusTone, "warning");
@@ -30,7 +33,8 @@ test("dashboard view model marks pending entries as processing", async () => {
 });
 
 test("dashboard view model prefers AI-enhanced title, summary, and tags", async () => {
-  const { buildDashboardViewModel } = await import("@/app/(dashboard)/page");
+  const { buildDashboardViewModel } = await import("@/app/[locale]/(dashboard)/page");
+  const messages = getMessages('en');
   const model = buildDashboardViewModel([
     {
       id: "1",
@@ -41,7 +45,7 @@ test("dashboard view model prefers AI-enhanced title, summary, and tags", async 
       aiStatus: "done",
       createdAt: new Date(),
     } as never,
-  ], "focus");
+  ], messages, "focus");
 
   assert.equal(model.heading, 'Results for "focus"');
   assert.equal(model.entries[0].displayTitle, "Enhanced title");
@@ -53,7 +57,8 @@ test("dashboard view model prefers AI-enhanced title, summary, and tags", async 
 });
 
 test("dashboard view model marks failed AI entries clearly", async () => {
-  const { buildDashboardViewModel } = await import("@/app/(dashboard)/page");
+  const { buildDashboardViewModel } = await import("@/app/[locale]/(dashboard)/page");
+  const messages = getMessages('en');
   const model = buildDashboardViewModel([
     {
       id: "1",
@@ -64,14 +69,15 @@ test("dashboard view model marks failed AI entries clearly", async () => {
       aiStatus: "failed",
       createdAt: new Date(),
     } as never,
-  ], undefined);
+  ], messages, undefined);
 
   assert.equal(model.entries[0].statusLabel, "Needs review");
   assert.equal(model.entries[0].statusTone, "danger");
 });
 
 test("dashboard view model exposes top-level status summary counts", async () => {
-  const { buildDashboardViewModel } = await import("@/app/(dashboard)/page");
+  const { buildDashboardViewModel } = await import("@/app/[locale]/(dashboard)/page");
+  const messages = getMessages('en');
   const model = buildDashboardViewModel([
     {
       id: "1",
@@ -100,7 +106,7 @@ test("dashboard view model exposes top-level status summary counts", async () =>
       aiStatus: "done",
       createdAt: new Date(),
     } as never,
-  ], undefined);
+  ], messages, undefined);
 
   assert.deepEqual(model.summaryStats, [
     { label: "Processing", value: 1, tone: "warning" },

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { Search, X } from 'lucide-react';
 
@@ -20,17 +20,22 @@ export function buildSearchHref(currentUrl: string, query: string) {
   }
 
   const serialized = params.toString();
-  return serialized ? `/?${serialized}` : '/';
+  return serialized ? `${url.pathname}?${serialized}` : url.pathname;
 }
 
-export function SearchInput() {
+interface SearchInputProps {
+  placeholder?: string;
+}
+
+export function SearchInput({ placeholder = 'Search entries...' }: SearchInputProps) {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const router = useRouter();
   const [query, setQuery] = useState(searchParams.get('q') || '');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const currentUrl = `http://localhost/?${searchParams.toString()}`;
+    const currentUrl = `http://localhost${pathname}?${searchParams.toString()}`;
     router.push(buildSearchHref(currentUrl, query));
   };
 
@@ -41,7 +46,7 @@ export function SearchInput() {
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search entries..."
+        placeholder={placeholder}
         className="h-11 w-full rounded-full border border-border bg-surface pl-10 pr-12 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-ring"
       />
       {query && (
@@ -49,7 +54,7 @@ export function SearchInput() {
           type="button"
           onClick={() => {
             setQuery('');
-            router.push(buildSearchHref(`http://localhost/?${searchParams.toString()}`, ''));
+            router.push(buildSearchHref(`http://localhost${pathname}?${searchParams.toString()}`, ''));
           }}
           className="absolute right-2.5 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface2 hover:text-text"
           aria-label="Clear search"

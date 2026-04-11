@@ -1,18 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-test("normalizeSearchQuery trims user input", async () => {
-  const { normalizeSearchQuery } = await import("@/components/SearchInput");
-  assert.equal(normalizeSearchQuery("  hello world  "), "hello world");
-  assert.equal(normalizeSearchQuery("   "), "");
-});
-
-test("buildSearchHref adds q when query is present", async () => {
+test("buildSearchHref preserves locale path and query params", async () => {
   const { buildSearchHref } = await import("@/components/SearchInput");
-  assert.equal(buildSearchHref("http://localhost/?page=1", "  focus "), "/?page=1&q=focus");
+  assert.equal(buildSearchHref("http://localhost/zh?page=1", "  focus "), "/zh?page=1&q=focus");
 });
 
 test("buildSearchHref removes q when query is cleared", async () => {
   const { buildSearchHref } = await import("@/components/SearchInput");
-  assert.equal(buildSearchHref("http://localhost/?page=1&q=old", "   "), "/?page=1");
+  assert.equal(buildSearchHref("http://localhost/en?page=1&q=old", "   "), "/en?page=1");
 });

@@ -1,9 +1,9 @@
-import "./globals.css";
-import type { Metadata } from "next";
+import './globals.css';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "Limen",
-  description: "A personal diary app",
+  title: 'Limen',
+  description: 'A personal diary app',
 };
 
 export default function RootLayout({
@@ -11,11 +11,5 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en">
-      <body className="antialiased">
-        {children}
-      </body>
-    </html>
-  );
+  return children;
 }

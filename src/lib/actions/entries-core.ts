@@ -4,6 +4,8 @@ import { processAIEntry as runAI } from '@/lib/ai/processor';
 import { revalidatePath as nextRevalidatePath } from 'next/cache';
 import { redirect as nextRedirect } from 'next/navigation';
 import { eq, inArray } from 'drizzle-orm';
+import { dashboardPath, entryDetailPath, entryEditPath } from '@/lib/i18n/pathname';
+import type { Locale } from '@/lib/i18n/config';
 
 type EntryActionDeps = {
   db: typeof appDb;
@@ -28,7 +30,7 @@ export function createEntryActions({
   redirect,
 }: EntryActionDeps) {
   return {
-    async createEntry(formData: FormData) {
+    async createEntry(locale: Locale, formData: FormData) {
       const content = formData.get('content') as string;
       const createdAtInput = formData.get('createdAt') as string | null;
 
@@ -52,20 +54,20 @@ export function createEntryActions({
         });
       });
 
-      revalidatePath('/');
-      redirect('/');
+      revalidatePath(dashboardPath(locale));
+      redirect(dashboardPath(locale));
     },
 
-    async deleteEntry(id: string) {
+    async deleteEntry(locale: Locale, id: string) {
       await db.delete(entries).where(eq(entries.id, id));
-      revalidatePath('/');
-      redirect('/');
+      revalidatePath(dashboardPath(locale));
+      redirect(dashboardPath(locale));
     },
 
-    async updateEntry(id: string, formData: FormData) {
+    async updateEntry(locale: Locale, id: string, formData: FormData) {
       const content = (formData.get('content') as string | null)?.trim() ?? '';
       if (!content) {
-        redirect(`/entries/${id}/edit`);
+        redirect(entryEditPath(locale, id));
       }
 
       const title = (formData.get('title') as string | null)?.trim() || null;
@@ -88,18 +90,18 @@ export function createEntryActions({
         updatedAt: new Date(),
       }).where(eq(entries.id, id));
 
-      revalidatePath('/');
-      revalidatePath(`/entries/${id}`);
-      redirect(`/entries/${id}`);
+      revalidatePath(dashboardPath(locale));
+      revalidatePath(entryDetailPath(locale, id));
+      redirect(entryDetailPath(locale, id));
     },
 
-    async regenerateEntryMetadata(id: string) {
+    async regenerateEntryMetadata(locale: Locale, id: string) {
       const entry = await db.query.entries.findFirst({
         where: eq(entries.id, id),
       });
 
       if (!entry) {
-        redirect('/');
+        redirect(dashboardPath(locale));
         return;
       }
 
@@ -116,12 +118,12 @@ export function createEntryActions({
         });
       });
 
-      revalidatePath('/');
-      revalidatePath(`/entries/${id}`);
-      redirect(`/entries/${id}`);
+      revalidatePath(dashboardPath(locale));
+      revalidatePath(entryDetailPath(locale, id));
+      redirect(entryDetailPath(locale, id));
     },
 
-    async bulkRegenerateEntryMetadata(ids: string[]) {
+    async bulkRegenerateEntryMetadata(locale: Locale, ids: string[]) {
       const normalizedIds = ids.filter(Boolean);
       if (normalizedIds.length === 0) return;
 
@@ -145,15 +147,15 @@ export function createEntryActions({
         }
       });
 
-      revalidatePath('/');
+      revalidatePath(dashboardPath(locale));
     },
 
-    async bulkDeleteEntries(ids: string[]) {
+    async bulkDeleteEntries(locale: Locale, ids: string[]) {
       const normalizedIds = ids.filter(Boolean);
       if (normalizedIds.length === 0) return;
 
       await db.delete(entries).where(inArray(entries.id, normalizedIds));
-      revalidatePath('/');
+      revalidatePath(dashboardPath(locale));
     },
   };
 }
