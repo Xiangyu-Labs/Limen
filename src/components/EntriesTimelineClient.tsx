@@ -41,13 +41,13 @@ function formatEntryDate(date: Date | null, locale: Locale): string {
 interface EntriesTimelineClientProps {
   entries: TimelineEntry[];
   locale: Locale;
-  messages: ReturnType<typeof getMessages>;
 }
 
-export function EntriesTimelineClient({ entries, locale, messages }: EntriesTimelineClientProps) {
+export function EntriesTimelineClient({ entries, locale }: EntriesTimelineClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const selection = useSelection({ allIds: entries.map((entry) => entry.id) });
+  const messages = getMessages(locale);
 
   const runBulkRegenerate = () => {
     if (selection.selectedIds.length === 0) return;

@@ -123,7 +123,7 @@ export default async function DashboardPage({
           </Link>
         </div>
       ) : (
-        <EntriesTimelineClient entries={viewModel.entries} locale={locale} messages={messages} />
+        <EntriesTimelineClient entries={viewModel.entries} locale={locale} />
       )}
     </div>
   );
