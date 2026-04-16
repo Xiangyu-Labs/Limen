@@ -1,9 +1,8 @@
 services:
   limen:
-    build:
-      context: .
-    ports:
-      - "3000:3000"
+    image: ghcr.io/xiangyumou/limen:latest
+    container_name: limen
+    restart: unless-stopped
     environment:
       AUTH_PASSWORD: ${AUTH_PASSWORD}
       SESSION_SECRET: ${SESSION_SECRET}
@@ -16,4 +15,14 @@ services:
       PORT: 3000
     volumes:
       - ./data:/app/data
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: limen-watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_CLEANUP=true
+    command: limen
     restart: unless-stopped
