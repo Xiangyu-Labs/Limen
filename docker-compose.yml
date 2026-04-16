@@ -1,17 +1,8 @@
 services:
   limen:
-    image: ghcr.io/xiangyumou/limen:latest
+    image: ghcr.io/xiangyu-labs/limen:latest
     container_name: limen
     restart: unless-stopped
-    networks:
-      - server-internal-net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.limen.rule=Host(`diary.xiangyu.pro`)"
-      - "traefik.http.routers.limen.entrypoints=websecure"
-      - "traefik.http.routers.limen.tls=true"
-      - "traefik.http.routers.limen.tls.certresolver=myresolver"
-      - "traefik.http.services.limen.loadbalancer.server.port=3000"
     environment:
       AUTH_PASSWORD: ${AUTH_PASSWORD}
       SESSION_SECRET: ${SESSION_SECRET}
@@ -34,10 +25,4 @@ services:
       - WATCHTOWER_POLL_INTERVAL=300
       - WATCHTOWER_CLEANUP=true
     command: limen
-    networks:
-      - server-internal-net
     restart: unless-stopped
-
-networks:
-  server-internal-net:
-    external: true
