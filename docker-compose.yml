@@ -12,6 +12,7 @@ services:
       - "traefik.http.routers.limen.tls=true"
       - "traefik.http.routers.limen.tls.certresolver=myresolver"
       - "traefik.http.services.limen.loadbalancer.server.port=3000"
+      - "com.centurylinklabs.watchtower.enable=true"
     environment:
       AUTH_PASSWORD: ${AUTH_PASSWORD}
       SESSION_SECRET: ${SESSION_SECRET}
