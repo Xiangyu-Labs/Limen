@@ -135,6 +135,7 @@ export function EntriesTimelineClient({ entries, locale }: EntriesTimelineClient
                     type="checkbox"
                     checked={checked}
                     onChange={() => selection.toggleSelection(entry.id)}
+                    onClick={(e) => e.stopPropagation()}
                     className="mt-1 h-4 w-4 rounded border-border text-primary"
                     aria-label={`Select ${entry.displayTitle}`}
                   />
