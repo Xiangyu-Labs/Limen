@@ -7,7 +7,7 @@ export const zhMessages = {
     delete: '删除',
     regenerate: '重新生成',
     processing: '处理中',
-    needsReview: '待检查',
+    failed: '失败',
     ready: '已就绪',
     unknown: '未知',
   },
@@ -51,13 +51,6 @@ export const zhMessages = {
     password: '密码',
     unexpectedError: '发生了意外错误',
     protectedBy: '端到端加密保护',
-  },
-  timelineClient: {
-    select: '选择',
-    clearAll: '清空选择',
-    selectAll: '全选',
-    exit: '退出',
-    selected: (count: number) => `已选择 ${count} 条`,
   },
   layout: {
     tagline: '记录 • 整理 • 回看',

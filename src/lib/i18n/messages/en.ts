@@ -7,7 +7,7 @@ export const enMessages = {
     delete: 'Delete',
     regenerate: 'Regenerate',
     processing: 'Processing',
-    needsReview: 'Needs review',
+    failed: 'Failed',
     ready: 'Ready',
     unknown: 'Unknown',
   },
@@ -51,13 +51,6 @@ export const enMessages = {
     password: 'Password',
     unexpectedError: 'An unexpected error occurred',
     protectedBy: 'Protected by End-to-End Encryption',
-  },
-  timelineClient: {
-    select: 'Select',
-    clearAll: 'Clear all',
-    selectAll: 'Select all',
-    exit: 'Exit',
-    selected: (count: number) => `${count} selected`,
   },
   layout: {
     tagline: 'Capture • Refine • Revisit',
