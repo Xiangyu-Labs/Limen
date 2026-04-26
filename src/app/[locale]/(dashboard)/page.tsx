@@ -2,7 +2,9 @@ import { db } from '@/lib/db';
 import { entries } from '@/lib/db/schema';
 import { desc, like, or } from 'drizzle-orm';
 import Link from 'next/link';
+import { format, isSameDay } from 'date-fns';
 import { EntriesTimelineClient } from '@/components/EntriesTimelineClient';
+import { CalendarFilter } from '@/components/CalendarFilter';
 import { getMessages } from '@/lib/i18n/getMessages';
 import type { Locale } from '@/lib/i18n/config';
 import { newEntryPath } from '@/lib/i18n/pathname';
@@ -20,20 +22,9 @@ export function buildDashboardViewModel(
   messages: ReturnType<typeof getMessages>,
   q?: string,
 ) {
-  const counts = {
-    pending: allEntries.filter((entry) => entry.aiStatus === 'pending').length,
-    failed: allEntries.filter((entry) => entry.aiStatus === 'failed').length,
-    done: allEntries.filter((entry) => entry.aiStatus === 'done').length,
-  };
-
   return {
     heading: q ? messages.dashboard.resultsFor(q) : messages.common.timeline,
     emptyMessage: messages.dashboard.emptyMessage,
-    summaryStats: [
-      { label: messages.common.processing, value: counts.pending, tone: 'warning' },
-      { label: messages.common.needsReview, value: counts.failed, tone: 'danger' },
-      { label: messages.common.ready, value: counts.done, tone: 'success' },
-    ],
     entries: allEntries.map((entry) => ({
       ...entry,
       tags: entry.tags ? (JSON.parse(entry.tags) as string[]) : [],
@@ -43,7 +34,7 @@ export function buildDashboardViewModel(
         entry.aiStatus === 'pending'
           ? messages.common.processing
           : entry.aiStatus === 'failed'
-            ? messages.common.needsReview
+            ? messages.common.failed
             : entry.aiStatus === 'done'
               ? messages.common.ready
               : null,
@@ -65,9 +56,9 @@ export default async function DashboardPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; date?: string }>;
 }) {
-  const [{ locale: localeParam }, { q }] = await Promise.all([params, searchParams]);
+  const [{ locale: localeParam }, { q, date }] = await Promise.all([params, searchParams]);
   const locale = localeParam as Locale;
   const messages = getMessages(locale);
 
@@ -84,7 +75,20 @@ export default async function DashboardPage({
   }
 
   const allEntries = await query;
-  const viewModel = buildDashboardViewModel(allEntries, messages, q);
+
+  let filteredEntries = allEntries;
+  if (date) {
+    const filterDate = new Date(date + 'T00:00:00');
+    filteredEntries = allEntries.filter((entry) =>
+      entry.createdAt && isSameDay(entry.createdAt, filterDate)
+    );
+  }
+
+  const datesWithEntries = allEntries
+    .filter((entry) => entry.createdAt)
+    .map((entry) => format(entry.createdAt!, 'yyyy-MM-dd'));
+
+  const viewModel = buildDashboardViewModel(filteredEntries, messages, q);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -96,24 +100,12 @@ export default async function DashboardPage({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="w-fit rounded-full border border-border bg-surface2 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted">
-            {allEntries.length} {messages.dashboard.entriesCount}
+            {filteredEntries.length} {messages.dashboard.entriesCount}
           </span>
-          {viewModel.summaryStats.map((stat) => (
-            <span
-              key={stat.label}
-              className={`w-fit rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${
-                stat.tone === 'warning'
-                  ? 'bg-warning/10 text-warning'
-                  : stat.tone === 'danger'
-                    ? 'bg-danger/10 text-danger'
-                    : 'bg-primary/10 text-primary'
-              }`}
-            >
-              {stat.value} {stat.label}
-            </span>
-          ))}
         </div>
       </div>
+
+      <CalendarFilter datesWithEntries={datesWithEntries} selectedDate={date} locale={locale} />
 
       {viewModel.entries.length === 0 ? (
         <div className="rounded-[var(--radius-xl)] border border-border bg-surface py-20 flex flex-col items-center justify-center text-center shadow-sm">
