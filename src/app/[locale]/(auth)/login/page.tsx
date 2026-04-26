@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { login } from '@/lib/auth/actions';
 import { Lock, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -38,7 +39,10 @@ export default function LoginPage({
         setError(result.error);
         setLoading(false);
       }
-    } catch {
+    } catch (error) {
+      if (isRedirectError(error)) {
+        throw error;
+      }
       setError(locale === 'zh' ? '发生了意外错误' : 'An unexpected error occurred');
       setLoading(false);
     }
