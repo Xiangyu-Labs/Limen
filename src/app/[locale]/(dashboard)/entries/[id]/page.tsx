@@ -34,7 +34,7 @@ export function buildEntryDetailViewModel(
       entry.aiStatus === 'done'
         ? messages.entryDetail.aiEnhanced
         : entry.aiStatus === 'failed'
-          ? messages.common.needsReview
+          ? messages.common.failed
           : messages.common.processing,
     statusTone:
       entry.aiStatus === 'done'

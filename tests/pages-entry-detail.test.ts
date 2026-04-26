@@ -55,6 +55,6 @@ test("entry detail view model exposes regenerate action copy", async () => {
   } as never, messages);
 
   assert.equal(model.regenerateLabel, "Regenerate AI Metadata");
-  assert.equal(model.statusLabel, "Needs review");
+  assert.equal(model.statusLabel, "Failed");
   assert.equal(model.statusTone, "danger");
 });

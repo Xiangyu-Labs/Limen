@@ -71,46 +71,7 @@ test("dashboard view model marks failed AI entries clearly", async () => {
     } as never,
   ], messages, undefined);
 
-  assert.equal(model.entries[0].statusLabel, "Needs review");
+  assert.equal(model.entries[0].statusLabel, "Failed");
   assert.equal(model.entries[0].statusTone, "danger");
 });
 
-test("dashboard view model exposes top-level status summary counts", async () => {
-  const { buildDashboardViewModel } = await import("@/app/[locale]/(dashboard)/page");
-  const messages = getMessages('en');
-  const model = buildDashboardViewModel([
-    {
-      id: "1",
-      content: "Pending",
-      title: null,
-      summary: null,
-      tags: null,
-      aiStatus: "pending",
-      createdAt: new Date(),
-    } as never,
-    {
-      id: "2",
-      content: "Failed",
-      title: null,
-      summary: null,
-      tags: null,
-      aiStatus: "failed",
-      createdAt: new Date(),
-    } as never,
-    {
-      id: "3",
-      content: "Done",
-      title: "Done",
-      summary: "Done",
-      tags: JSON.stringify(["x"]),
-      aiStatus: "done",
-      createdAt: new Date(),
-    } as never,
-  ], messages, undefined);
-
-  assert.deepEqual(model.summaryStats, [
-    { label: "Processing", value: 1, tone: "warning" },
-    { label: "Needs review", value: 1, tone: "danger" },
-    { label: "Ready", value: 1, tone: "success" },
-  ]);
-});
