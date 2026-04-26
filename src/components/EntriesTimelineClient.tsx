@@ -87,21 +87,13 @@ export function EntriesTimelineClient({ entries, locale }: EntriesTimelineClient
           >
             <div className="flex min-w-0 items-start justify-between gap-3 sm:gap-6">
               <div className="min-w-0 flex-1 space-y-3">
-                <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-start sm:gap-3">
-                  <div className="min-w-0 space-y-2">
-                    <h2 className="truncate text-base font-bold tracking-tight text-text transition-colors group-hover:text-primary sm:text-lg">
-                      {entry.displayTitle}
-                    </h2>
-                    <p className="line-clamp-2 text-sm leading-relaxed text-muted/90">
-                      {entry.displaySummary}
-                    </p>
-                  </div>
-                  {entry.statusLabel && (
-                    <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${toneClasses(entry.statusTone)}`}>
-                      <span className={`h-1.5 w-1.5 rounded-full ${toneDotClasses(entry.statusTone)}`} />
-                      {entry.statusLabel}
-                    </span>
-                  )}
+                <div className="min-w-0 space-y-2">
+                  <h2 className="truncate text-base font-bold tracking-tight text-text transition-colors group-hover:text-primary sm:text-lg">
+                    {entry.displayTitle}
+                  </h2>
+                  <p className="line-clamp-2 text-sm leading-relaxed text-muted/90">
+                    {entry.displaySummary}
+                  </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
@@ -109,9 +101,12 @@ export function EntriesTimelineClient({ entries, locale }: EntriesTimelineClient
                     <Calendar className="h-3 w-3" />
                     {formatEntryDate(entry.createdAt, locale)}
                   </span>
-                  <span className="rounded-full border border-border bg-surface2/60 px-2.5 py-1">
-                    {entry.metaLine[0]}
-                  </span>
+                  {entry.statusLabel && (
+                    <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${toneClasses(entry.statusTone)}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${toneDotClasses(entry.statusTone)}`} />
+                      {entry.statusLabel}
+                    </span>
+                  )}
                 </div>
 
                 {entry.tags.length > 0 && (
