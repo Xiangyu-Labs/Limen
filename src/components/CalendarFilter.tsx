@@ -63,7 +63,7 @@ export function CalendarFilter({ datesWithEntries, selectedDate }: CalendarFilte
   const monthLabel = format(currentMonth, "yyyy年M月");
 
   return (
-    <details className="group relative">
+    <details className="group relative shrink-0">
       <summary className="flex h-10 cursor-pointer list-none items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 text-sm text-text transition-colors hover:bg-surface2 marker:hidden sm:min-w-36 [&::-webkit-details-marker]:hidden">
         <span className="inline-flex min-w-0 items-center gap-2">
           <CalendarDays className="h-4 w-4 shrink-0 text-muted" />

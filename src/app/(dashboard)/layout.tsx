@@ -7,21 +7,30 @@ import { dashboardPath, newEntryPath } from '@/lib/pathname';
 
 export default async function DashboardLayout({
   children,
+  navControls,
 }: {
   children: React.ReactNode;
+  navControls: React.ReactNode;
 }) {
   return (
     <div className="flex min-h-screen flex-col bg-bg">
       <header className="sticky top-0 z-10 border-b border-border bg-surface/95 backdrop-blur">
         <div className="mx-auto max-w-5xl px-4 py-3 md:px-6">
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <Link href={dashboardPath()} className="flex h-10 items-center font-semibold tracking-tight text-text transition-colors hover:text-primary">
-                <span>Limen</span>
-              </Link>
-            </div>
+          <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap">
+            <Link
+              href={dashboardPath()}
+              className="flex h-10 shrink-0 items-center font-semibold tracking-tight text-text transition-colors hover:text-primary"
+            >
+              <span>Limen</span>
+            </Link>
 
-            <div className="flex items-center gap-2">
+            {navControls ? (
+              <div className="min-w-[20rem] flex-1">{navControls}</div>
+            ) : (
+              <div className="min-w-0 flex-1" />
+            )}
+
+            <div className="flex shrink-0 items-center gap-2">
               <Button asChild size="sm" className="h-10 px-3 md:px-4">
                 <Link href={newEntryPath()}>
                   <PlusCircle className="h-4 w-4" />

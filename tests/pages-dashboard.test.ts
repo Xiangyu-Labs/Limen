@@ -70,22 +70,33 @@ test("dashboard view model marks failed AI entries clearly", async () => {
   assert.equal(model.entries[0].statusTone, "danger");
 });
 
-test("dashboard groups search and date into one compact filter surface", () => {
+test("dashboard renders search, date, and count in the top navigation controls", () => {
   const dashboardPath = new URL("../src/app/(dashboard)/page.tsx", import.meta.url);
   const layoutPath = new URL("../src/app/(dashboard)/layout.tsx", import.meta.url);
   const filtersPath = new URL("../src/components/DashboardFilters.tsx", import.meta.url);
+  const navControlsPath = new URL("../src/app/(dashboard)/@navControls/page.tsx", import.meta.url);
+  const navControlsDefaultPath = new URL("../src/app/(dashboard)/@navControls/default.tsx", import.meta.url);
 
   assert.equal(existsSync(filtersPath), true, "dashboard filter component should exist");
+  assert.equal(existsSync(navControlsPath), true, "dashboard nav controls slot page should exist");
+  assert.equal(existsSync(navControlsDefaultPath), true, "dashboard nav controls default should exist");
 
   const dashboardSource = readFileSync(dashboardPath, "utf8");
   const layoutSource = readFileSync(layoutPath, "utf8");
   const filtersSource = readFileSync(filtersPath, "utf8");
+  const navControlsSource = readFileSync(navControlsPath, "utf8");
+  const headerSource = layoutSource.match(/<header[\s\S]*?<\/header>/)?.[0] ?? "";
 
-  assert.match(dashboardSource, /DashboardFilters/);
+  assert.doesNotMatch(dashboardSource, /DashboardFilters/);
   assert.doesNotMatch(dashboardSource, /<aside\b/);
   assert.doesNotMatch(dashboardSource, /<h1\b/);
-  assert.match(dashboardSource, /entriesCount=\{filteredEntries\.length\}/);
-  assert.doesNotMatch(layoutSource, /SearchInput/);
+  assert.match(layoutSource, /navControls/);
+  assert.match(headerSource, /\{navControls\}/);
+  assert.doesNotMatch(headerSource, /flex-col/, "top navigation controls must stay in one row");
+  assert.doesNotMatch(headerSource, /lg:grid/, "top navigation should not switch between stacked and grid layouts");
+  assert.match(headerSource, /overflow-x-auto/, "single-row navigation should scroll horizontally instead of wrapping");
+  assert.match(navControlsSource, /DashboardFilters/);
+  assert.match(navControlsSource, /entriesCount=\{filteredEntries\.length\}/);
   assert.match(filtersSource, /<SearchInput/);
   assert.match(filtersSource, /<CalendarFilter/);
   assert.match(filtersSource, /entriesCount/);

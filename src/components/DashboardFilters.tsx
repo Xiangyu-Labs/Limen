@@ -11,16 +11,14 @@ interface DashboardFiltersProps {
 
 export function DashboardFilters({ datesWithEntries, entriesCount, selectedDate }: DashboardFiltersProps) {
   return (
-    <section className="rounded-lg border border-border bg-surface p-3">
-      <div className="flex items-center gap-2">
-        <Suspense fallback={<div className="h-10 flex-1 animate-pulse rounded-md bg-surface2" />}>
-          <SearchInput placeholder={messages.common.search} className="min-w-0 max-w-none flex-1" />
-        </Suspense>
-        <CalendarFilter datesWithEntries={datesWithEntries} selectedDate={selectedDate} />
-        <span className="shrink-0 px-1 text-xs text-muted sm:px-2">
-          {entriesCount} {messages.dashboard.entriesCount}
-        </span>
-      </div>
-    </section>
+    <div className="flex min-w-0 items-center gap-2">
+      <Suspense fallback={<div className="h-10 min-w-0 flex-1 animate-pulse rounded-md bg-surface2" />}>
+        <SearchInput placeholder={messages.common.search} className="min-w-0 max-w-none flex-1" />
+      </Suspense>
+      <CalendarFilter datesWithEntries={datesWithEntries} selectedDate={selectedDate} />
+      <span className="inline-flex h-10 shrink-0 items-center rounded-md border border-border px-2 text-xs font-medium text-muted sm:px-3">
+        {entriesCount} {messages.dashboard.entriesCount}
+      </span>
+    </div>
   );
 }

@@ -1,10 +1,6 @@
-import { db } from '@/lib/db';
-import { entries } from '@/lib/db/schema';
-import { desc, like, or } from 'drizzle-orm';
 import Link from 'next/link';
-import { format, isSameDay } from 'date-fns';
 import { EntriesTimelineClient } from '@/components/EntriesTimelineClient';
-import { DashboardFilters } from '@/components/DashboardFilters';
+import { filterDashboardEntriesByDate, loadDashboardEntries } from '@/lib/dashboard-data';
 import { messages } from '@/lib/messages';
 import { newEntryPath } from '@/lib/pathname';
 
@@ -42,42 +38,13 @@ export default async function DashboardPage({
 }) {
   const { q, date } = await searchParams;
 
-  let query = db.select().from(entries).orderBy(desc(entries.createdAt));
-
-  if (q) {
-    query = db.select().from(entries)
-      .where(or(
-        like(entries.content, `%${q}%`),
-        like(entries.title, `%${q}%`),
-        like(entries.summary, `%${q}%`)
-      ))
-      .orderBy(desc(entries.createdAt)) as any;
-  }
-
-  const allEntries = await query;
-
-  let filteredEntries = allEntries;
-  if (date) {
-    const filterDate = new Date(date + 'T00:00:00');
-    filteredEntries = allEntries.filter((entry) =>
-      entry.createdAt && isSameDay(entry.createdAt, filterDate)
-    );
-  }
-
-  const datesWithEntries = allEntries
-    .filter((entry) => entry.createdAt)
-    .map((entry) => format(entry.createdAt!, 'yyyy-MM-dd'));
+  const allEntries = await loadDashboardEntries(q);
+  const filteredEntries = filterDashboardEntriesByDate(allEntries, date);
 
   const viewModel = buildDashboardViewModel(filteredEntries, messages, q);
 
   return (
     <div className="space-y-5">
-      <DashboardFilters
-        datesWithEntries={datesWithEntries}
-        entriesCount={filteredEntries.length}
-        selectedDate={date}
-      />
-
       {viewModel.entries.length === 0 ? (
         <div className="flex min-h-[320px] flex-col items-center justify-center rounded-lg border border-border bg-surface text-center">
           <p className="text-sm text-muted">{viewModel.emptyMessage}</p>
