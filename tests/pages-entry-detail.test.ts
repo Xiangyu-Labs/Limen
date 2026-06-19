@@ -49,7 +49,7 @@ test("entry detail view model exposes regenerate action copy", async () => {
     createdAt: new Date(),
   } as never, messages);
 
-  assert.equal(model.regenerateLabel, "重新生成 AI 元数据");
+  assert.equal(model.regenerateLabel, "重新整理");
   assert.equal(model.statusLabel, "失败");
   assert.equal(model.statusTone, "danger");
 });

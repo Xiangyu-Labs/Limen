@@ -4,7 +4,7 @@ import { desc, like, or } from 'drizzle-orm';
 import Link from 'next/link';
 import { format, isSameDay } from 'date-fns';
 import { EntriesTimelineClient } from '@/components/EntriesTimelineClient';
-import { CalendarFilter } from '@/components/CalendarFilter';
+import { DashboardFilters } from '@/components/DashboardFilters';
 import { messages } from '@/lib/messages';
 import { newEntryPath } from '@/lib/pathname';
 
@@ -71,26 +71,20 @@ export default async function DashboardPage({
   const viewModel = buildDashboardViewModel(filteredEntries, messages, q);
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <div className="flex flex-col gap-3 rounded-[var(--radius-xl)] border border-border/70 bg-surface px-5 py-5 shadow-sm md:flex-row md:items-end md:justify-between md:px-6">
-        <div className="space-y-1">
-          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-primary">{messages.common.timeline}</p>
-          <h1 className="text-2xl font-bold tracking-tight text-text">{viewModel.heading}</h1>
-          <p className="text-sm text-muted">{messages.dashboard.summary}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="w-fit rounded-full border border-border bg-surface2 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-muted">
-            {filteredEntries.length} {messages.dashboard.entriesCount}
-          </span>
-        </div>
-      </div>
-
-      <CalendarFilter datesWithEntries={datesWithEntries} selectedDate={date} />
+    <div className="space-y-5">
+      <DashboardFilters
+        datesWithEntries={datesWithEntries}
+        entriesCount={filteredEntries.length}
+        selectedDate={date}
+      />
 
       {viewModel.entries.length === 0 ? (
-        <div className="rounded-[var(--radius-xl)] border border-border bg-surface py-20 flex flex-col items-center justify-center text-center shadow-sm">
-          <p className="text-muted text-sm font-medium">{viewModel.emptyMessage}</p>
-          <Link href={newEntryPath()} className="mt-6 text-primary text-sm font-bold uppercase tracking-widest hover:underline active:scale-[0.99] transition-transform">
+        <div className="flex min-h-[320px] flex-col items-center justify-center rounded-lg border border-border bg-surface text-center">
+          <p className="text-sm text-muted">{viewModel.emptyMessage}</p>
+          <Link
+            href={newEntryPath()}
+            className="mt-5 inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          >
             {messages.dashboard.createFirstEntry}
           </Link>
         </div>

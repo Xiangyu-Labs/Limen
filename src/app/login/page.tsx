@@ -3,10 +3,8 @@
 import { useState } from 'react';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { login } from '@/lib/auth/actions';
-import { BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { messages } from '@/lib/messages';
 
 export function getLoginSubmitLabel(loading: boolean) {
@@ -36,56 +34,36 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface2 p-6 animate-in fade-in duration-500">
-      <Card className="max-w-sm w-full p-2">
-        <CardHeader className="text-center space-y-3 pb-8">
-          <div className="mx-auto h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center">
-            <BookOpen className="h-6 w-6 text-primary" />
+    <div className="flex min-h-screen items-center justify-center bg-bg p-6">
+      <form action={handleSubmit} className="w-full max-w-xs space-y-5">
+        <h1 className="text-center text-2xl font-semibold tracking-tight text-text">Limen</h1>
+
+        <div>
+          <label className="sr-only">{messages.login.password}</label>
+          <Input
+            name="password"
+            type="password"
+            required
+            autoFocus
+            className="h-12 text-center text-lg tracking-[0.45em]"
+            placeholder="••••••••"
+          />
+        </div>
+
+        {error && (
+          <div className="rounded-md bg-danger/10 px-3 py-2 text-center text-sm text-danger">
+            {error}
           </div>
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-text tracking-tight">Limen</h1>
-            <p className="text-xs font-bold text-muted uppercase tracking-widest">
-              {messages.login.subtitle}
-            </p>
-          </div>
-        </CardHeader>
+        )}
 
-        <CardContent>
-          <form action={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-muted uppercase tracking-widest">
-                {messages.login.password}
-              </label>
-              <Input
-                name="password"
-                type="password"
-                required
-                autoFocus
-                className="h-12 text-center text-lg tracking-[0.5em]"
-                placeholder="••••••••"
-              />
-            </div>
-
-            {error && (
-              <div className="text-danger text-[10px] font-bold uppercase tracking-widest text-center bg-danger/10 py-3 rounded-md animate-in shake-2 duration-300">
-                {error}
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full h-12 text-sm font-bold uppercase tracking-widest"
-            >
-              {getLoginSubmitLabel(loading)}
-            </Button>
-          </form>
-
-          <p className="mt-8 text-center text-[10px] text-muted font-bold uppercase tracking-widest opacity-60">
-            {messages.login.protectedBy}
-          </p>
-        </CardContent>
-      </Card>
+        <Button
+          type="submit"
+          disabled={loading}
+          className="h-12 w-full"
+        >
+          {getLoginSubmitLabel(loading)}
+        </Button>
+      </form>
     </div>
   );
 }

@@ -24,7 +24,8 @@ test("entry editor shell model exposes edit-mode copy", async () => {
   const { buildEntryEditorShellModel } = await import("../src/components/EntryEditorShell.tsx");
   const model = buildEntryEditorShellModel({ mode: "edit", contentLength: 12 });
 
-  assert.equal(model.title, "编辑记录");
+  assert.equal(model.title, "编辑");
   assert.equal(model.primaryActionLabel, "保存");
-  assert.equal(model.helperText, "只修改原文和时间，AI 会重新整理标题、摘要和标签。");
+  assert.equal(model.metaLabel, "12 字");
+  assert.equal("helperText" in model, false);
 });

@@ -30,26 +30,25 @@ export default function NewEntryPage() {
   const shell = buildEntryEditorShellModel({ mode: 'create', contentLength: content.length });
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild className="rounded-full">
-          <Link href={dashboardPath()}>
+    <div className="mx-auto max-w-3xl space-y-3">
+      <div className="flex items-center">
+        <Button variant="ghost" size="icon" asChild className="-ml-2">
+          <Link href={dashboardPath()} aria-label={messages.common.timeline}>
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold tracking-tight text-text">{messages.editor.newCapture}</h1>
       </div>
 
-      <EntryEditorShell title={shell.title} helperText={shell.helperText} metaLabel={shell.metaLabel}>
+      <EntryEditorShell title={shell.title} metaLabel={shell.metaLabel}>
         <form
           action={async (formData) => {
             setLoading(true);
             await createEntry(formData);
           }}
-          className="flex h-[75vh] flex-col"
+          className="flex min-h-[640px] flex-col md:min-h-[72vh]"
         >
-          <div className="grid gap-2 border-b border-border/80 bg-surface px-8 py-5">
-            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted">
+          <div className="border-b border-border bg-surface px-4 py-3 md:px-5">
+            <label className="sr-only">
               {messages.editor.saveTo}
             </label>
             <input
@@ -57,7 +56,7 @@ export default function NewEntryPage() {
               type="datetime-local"
               value={createdAt}
               onChange={(e) => setCreatedAt(e.target.value)}
-              className="h-11 rounded-xl border border-border bg-surface2 px-4 text-sm text-text focus:outline-none focus:ring-2 focus:ring-ring"
+              className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-text transition-colors focus:outline-none focus:ring-2 focus:ring-ring/40"
             />
           </div>
 
@@ -67,23 +66,15 @@ export default function NewEntryPage() {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={messages.editor.contentPlaceholder}
-            className="flex-1 w-full p-8 text-lg leading-relaxed border-none focus:ring-0 resize-none bg-transparent placeholder:text-muted/50"
+            className="w-full flex-1 resize-none border-none bg-transparent p-4 text-lg leading-8 text-text placeholder:text-muted/50 focus:ring-0 md:p-6"
             autoFocus
           />
 
-          <div className="flex items-center justify-between border-t border-border bg-surface2/50 px-8 py-6">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-bold text-muted uppercase tracking-[0.2em]">
-                {shell.metaLabel}
-              </span>
-              <span className="text-[10px] font-medium text-muted/60 uppercase tracking-[0.18em]">
-                {shell.helperText}
-              </span>
-            </div>
+          <div className="flex items-center justify-end border-t border-border bg-surface px-4 py-3 md:px-5">
             <Button
               type="submit"
               disabled={isEntrySubmitDisabled({ loading, content })}
-              className="h-12 px-8 font-bold uppercase tracking-widest shadow-lg shadow-primary/20"
+              className="h-10 px-4"
             >
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />

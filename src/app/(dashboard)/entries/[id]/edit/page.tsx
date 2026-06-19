@@ -47,30 +47,32 @@ export default async function EditEntryPage({
   const shell = buildEntryEditorShellModel({ mode: 'edit', contentLength: model.content.length });
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild className="rounded-full">
-          <Link href={entryDetailPath(id)}>
+    <div className="mx-auto max-w-3xl space-y-3">
+      <div className="flex items-center">
+        <Button variant="ghost" size="icon" asChild className="-ml-2">
+          <Link href={entryDetailPath(id)} aria-label={messages.common.timeline}>
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold tracking-tight text-text">{messages.editor.editEntry}</h1>
       </div>
 
-      <EntryEditorShell title={shell.title} helperText={shell.helperText} metaLabel={shell.metaLabel}>
-        <form action={updateEntry.bind(null, id)} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-muted uppercase tracking-widest">{messages.editor.time}</label>
-            <Input name="createdAt" type="datetime-local" defaultValue={model.createdAt} />
+      <EntryEditorShell title={shell.title} metaLabel={shell.metaLabel}>
+        <form action={updateEntry.bind(null, id)} className="flex min-h-[640px] flex-col md:min-h-[72vh]">
+          <div className="border-b border-border bg-surface px-4 py-3 md:px-5">
+            <label className="sr-only">{messages.editor.time}</label>
+            <Input name="createdAt" type="datetime-local" defaultValue={model.createdAt} className="max-w-56" />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-muted uppercase tracking-widest">{messages.editor.content}</label>
-            <Textarea name="content" defaultValue={model.content} className="min-h-[320px]" required />
-          </div>
+          <label className="sr-only">{messages.editor.content}</label>
+          <Textarea
+            name="content"
+            defaultValue={model.content}
+            className="flex-1 resize-none border-0 bg-transparent p-4 text-lg leading-8 focus-visible:ring-0 md:p-6"
+            required
+          />
 
-          <div className="flex justify-end">
-            <Button type="submit" className="h-11 px-6 font-bold uppercase tracking-widest">
+          <div className="flex justify-end border-t border-border bg-surface px-4 py-3 md:px-5">
+            <Button type="submit" className="h-10 px-4">
               <Save className="h-4 w-4" />
               <span>{shell.primaryActionLabel}</span>
             </Button>

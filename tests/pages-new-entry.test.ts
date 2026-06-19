@@ -16,9 +16,10 @@ test("entry editor shell model exposes create-mode copy", async () => {
   const { buildEntryEditorShellModel } = await import("../src/components/EntryEditorShell.tsx");
   const model = buildEntryEditorShellModel({ mode: "create", contentLength: 42 });
 
-  assert.equal(model.title, "新建记录");
-  assert.equal(model.primaryActionLabel, "保存记录");
-  assert.equal(model.metaLabel, "42 个字符");
+  assert.equal(model.title, "新建");
+  assert.equal(model.primaryActionLabel, "保存");
+  assert.equal(model.metaLabel, "42 字");
+  assert.equal("helperText" in model, false);
 });
 
 test("new entry page derives a datetime-local default timestamp", async () => {

@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { existsSync, readFileSync } from "node:fs";
 import { messages } from "@/lib/messages";
 
 test("dashboard view model exposes empty state copy", async () => {
@@ -7,7 +8,7 @@ test("dashboard view model exposes empty state copy", async () => {
   const model = buildDashboardViewModel([], messages, undefined);
 
   assert.equal(model.heading, "时间线");
-  assert.equal(model.emptyMessage, "还没有任何记录，开始写下你的想法吧。");
+  assert.equal(model.emptyMessage, "还没有记录");
 });
 
 test("dashboard view model hides pending AI status", async () => {
@@ -67,4 +68,25 @@ test("dashboard view model marks failed AI entries clearly", async () => {
 
   assert.equal(model.entries[0].statusLabel, "失败");
   assert.equal(model.entries[0].statusTone, "danger");
+});
+
+test("dashboard groups search and date into one compact filter surface", () => {
+  const dashboardPath = new URL("../src/app/(dashboard)/page.tsx", import.meta.url);
+  const layoutPath = new URL("../src/app/(dashboard)/layout.tsx", import.meta.url);
+  const filtersPath = new URL("../src/components/DashboardFilters.tsx", import.meta.url);
+
+  assert.equal(existsSync(filtersPath), true, "dashboard filter component should exist");
+
+  const dashboardSource = readFileSync(dashboardPath, "utf8");
+  const layoutSource = readFileSync(layoutPath, "utf8");
+  const filtersSource = readFileSync(filtersPath, "utf8");
+
+  assert.match(dashboardSource, /DashboardFilters/);
+  assert.doesNotMatch(dashboardSource, /<aside\b/);
+  assert.doesNotMatch(dashboardSource, /<h1\b/);
+  assert.match(dashboardSource, /entriesCount=\{filteredEntries\.length\}/);
+  assert.doesNotMatch(layoutSource, /SearchInput/);
+  assert.match(filtersSource, /<SearchInput/);
+  assert.match(filtersSource, /<CalendarFilter/);
+  assert.match(filtersSource, /entriesCount/);
 });
