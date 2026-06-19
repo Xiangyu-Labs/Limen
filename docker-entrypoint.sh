@@ -33,5 +33,8 @@ esac
 echo "[INIT] Running database synchronization..."
 npm run db:push
 
+echo "[INIT] Running data migrations..."
+npm run db:migrate
+
 echo "[INIT] Starting application..."
 exec npm run start -- --hostname 0.0.0.0 --port "${PORT:-3000}"

@@ -5,7 +5,7 @@ import { entries } from '@/lib/db/schema';
 import { processAIEntry } from '@/lib/ai/processor';
 import { nanoid } from 'nanoid';
 import { desc } from 'drizzle-orm';
-import { parseEntryDateTimeInput } from '@/lib/actions/entries-core';
+import { parseEntryDateInput } from '@/lib/entry-date';
 
 type RouteDeps = {
   db: typeof db;
@@ -36,7 +36,7 @@ export function createEntriesRouteHandlers({
           content,
           source: 'web',
           aiStatus: 'pending',
-          createdAt: parseEntryDateTimeInput(createdAt),
+          createdAt: parseEntryDateInput(createdAt),
         });
 
         await schedule(async () => {

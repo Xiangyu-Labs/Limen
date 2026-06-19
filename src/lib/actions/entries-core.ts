@@ -5,6 +5,7 @@ import { revalidatePath as nextRevalidatePath } from 'next/cache';
 import { redirect as nextRedirect } from 'next/navigation';
 import { eq, inArray } from 'drizzle-orm';
 import { dashboardPath, entryDetailPath, entryEditPath } from '@/lib/pathname';
+import { parseEntryDateInput } from '@/lib/entry-date';
 
 type EntryActionDeps = {
   db: typeof appDb;
@@ -14,11 +15,6 @@ type EntryActionDeps = {
   revalidatePath: typeof nextRevalidatePath;
   redirect: typeof nextRedirect;
 };
-
-export function parseEntryDateTimeInput(input: string | null | undefined) {
-  if (!input) return new Date();
-  return input.includes('Z') ? new Date(input) : new Date(`${input}:00.000Z`);
-}
 
 export function createEntryActions({
   db,
@@ -43,7 +39,7 @@ export function createEntryActions({
         content,
         source: 'web',
         aiStatus: 'pending',
-        createdAt: parseEntryDateTimeInput(createdAtInput),
+        createdAt: parseEntryDateInput(createdAtInput),
         updatedAt: new Date(),
       });
 
@@ -70,7 +66,7 @@ export function createEntryActions({
       }
 
       const createdAtInput = formData.get('createdAt') as string | null;
-      const createdAt = parseEntryDateTimeInput(createdAtInput);
+      const createdAt = parseEntryDateInput(createdAtInput);
 
       await db.update(entries).set({
         title: null,

@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { messages } from "@/lib/messages";
 
 test("entry detail view model exposes summary and tags without success status", async () => {
@@ -52,4 +53,11 @@ test("entry detail view model exposes regenerate action copy", async () => {
   assert.equal(model.regenerateLabel, "重新整理");
   assert.equal(model.statusLabel, "失败");
   assert.equal(model.statusTone, "danger");
+});
+
+test("entry detail page does not render a time-of-day for entry dates", () => {
+  const source = readFileSync(new URL("../src/app/(dashboard)/entries/[id]/page.tsx", import.meta.url), "utf8");
+
+  assert.doesNotMatch(source, /Clock/);
+  assert.doesNotMatch(source, /type="time"/);
 });

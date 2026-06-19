@@ -22,10 +22,10 @@ test("entry editor shell model exposes create-mode copy", async () => {
   assert.equal("helperText" in model, false);
 });
 
-test("new entry page derives a datetime-local default timestamp", async () => {
+test("new entry page derives a date-only default value", async () => {
   const { getDefaultCreatedAtValue } = await import("@/app/(dashboard)/entries/new/page");
   assert.equal(
     getDefaultCreatedAtValue(new Date("2024-01-03T11:45:00.000Z")),
-    "2024-01-03T11:45",
+    "2024-01-03",
   );
 });

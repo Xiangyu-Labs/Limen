@@ -15,6 +15,7 @@
     "test": "npm run test:node",
     "lint": "eslint",
     "db:push": "drizzle-kit push",
+    "db:migrate": "tsx src/lib/db/apply-migrations.ts",
     "db:studio": "drizzle-kit studio"
   },
   "repository": {

@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
-import { ArrowLeft, Calendar, Trash2, Clock, Sparkles, Pencil } from 'lucide-react';
+import { ArrowLeft, Calendar, Trash2, Sparkles, Pencil } from 'lucide-react';
 import { deleteEntry, regenerateEntryMetadata } from '@/lib/actions/entries';
 import { FormattedDate } from '@/components/FormattedDate';
 import { Button } from '@/components/ui/button';
@@ -101,10 +101,6 @@ export default async function EntryDetailPage({
               <div className="flex items-center gap-2">
                 <Calendar className="h-3.5 w-3.5" />
                 <FormattedDate date={entry.createdAt!} type="full" />
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-3.5 w-3.5" />
-                <FormattedDate date={entry.createdAt!} type="time" />
               </div>
               {viewModel.statusLabel && (
                 <div className="flex items-center gap-2 rounded-md border border-danger/20 px-2 py-1 text-danger">

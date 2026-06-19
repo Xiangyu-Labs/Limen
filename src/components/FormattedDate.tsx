@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { formatAbsoluteDate } from '@/lib/format';
 
 interface FormattedDateProps {
   date: Date;
-  type?: 'relative' | 'full' | 'time';
+  type?: 'relative' | 'full';
   className?: string;
 }
 
@@ -25,10 +25,8 @@ export function FormattedDate({ date, type = 'relative', className }: FormattedD
   let content = '';
   if (type === 'relative') {
     content = formatDistanceToNow(new Date(date), { addSuffix: true, locale: zhCN });
-  } else if (type === 'full') {
-    content = formatAbsoluteDate(new Date(date));
   } else {
-    content = format(new Date(date), 'p', { locale: zhCN });
+    content = formatAbsoluteDate(new Date(date));
   }
 
   return <span className={className}>{content}</span>;

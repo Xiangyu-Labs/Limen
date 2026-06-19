@@ -10,7 +10,7 @@ import { messages } from '@/lib/messages';
 import { dashboardPath } from '@/lib/pathname';
 
 export function getDefaultCreatedAtValue(now = new Date()) {
-  return now.toISOString().slice(0, 16);
+  return now.toISOString().slice(0, 10);
 }
 
 export function isEntrySubmitDisabled({
@@ -53,7 +53,7 @@ export default function NewEntryPage() {
             </label>
             <input
               name="createdAt"
-              type="datetime-local"
+              type="date"
               value={createdAt}
               onChange={(e) => setCreatedAt(e.target.value)}
               className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-text transition-colors focus:outline-none focus:ring-2 focus:ring-ring/40"

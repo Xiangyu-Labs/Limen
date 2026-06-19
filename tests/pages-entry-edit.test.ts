@@ -14,7 +14,7 @@ test("edit entry form model maps entry fields to editable values", async () => {
 
   assert.equal(model.id, "entry-1");
   assert.equal(model.content, "Body");
-  assert.equal(model.createdAt, "2024-01-02T09:30");
+  assert.equal(model.createdAt, "2024-01-02");
   assert.equal("title" in model, false);
   assert.equal("summary" in model, false);
   assert.equal("tags" in model, false);

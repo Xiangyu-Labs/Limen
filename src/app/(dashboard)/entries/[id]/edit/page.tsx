@@ -11,9 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { messages } from '@/lib/messages';
 import { entryDetailPath } from '@/lib/pathname';
+import { formatEntryDateForInput } from '@/lib/entry-date';
 
-export function formatEntryDateTimeForInput(date: Date | null) {
-  return date ? date.toISOString().slice(0, 16) : '';
+export function formatEntryDateForEditInput(date: Date | null) {
+  return formatEntryDateForInput(date);
 }
 
 export function buildEditEntryFormModel(entry: {
@@ -24,7 +25,7 @@ export function buildEditEntryFormModel(entry: {
   return {
     id: entry.id,
     content: entry.content,
-    createdAt: formatEntryDateTimeForInput(entry.createdAt),
+    createdAt: formatEntryDateForEditInput(entry.createdAt),
   };
 }
 
@@ -60,7 +61,7 @@ export default async function EditEntryPage({
         <form action={updateEntry.bind(null, id)} className="flex min-h-[640px] flex-col md:min-h-[72vh]">
           <div className="border-b border-border bg-surface px-4 py-3 md:px-5">
             <label className="sr-only">{messages.editor.time}</label>
-            <Input name="createdAt" type="datetime-local" defaultValue={model.createdAt} className="max-w-56" />
+            <Input name="createdAt" type="date" defaultValue={model.createdAt} className="max-w-56" />
           </div>
 
           <label className="sr-only">{messages.editor.content}</label>

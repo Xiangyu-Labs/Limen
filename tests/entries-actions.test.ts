@@ -59,7 +59,7 @@ test("createEntry inserts a pending entry and redirects to dashboard", async () 
 
     const formData = new FormData();
     formData.set("content", "Ship locale-aware redirects");
-    formData.set("createdAt", "2024-01-03T11:45");
+    formData.set("createdAt", "2024-01-03");
 
     await assert.rejects(() => actions.createEntry(formData), /redirected/);
 
@@ -68,6 +68,7 @@ test("createEntry inserts a pending entry and redirects to dashboard", async () 
     });
 
     assert.equal(row?.aiStatus, "pending");
+    assert.equal(row?.createdAt?.toISOString(), "2024-01-03T00:00:00.000Z");
     assert.equal(revalidatedPath, "/");
     assert.equal(redirectedTo, "/");
     assert.equal(typeof scheduled, "function");
@@ -141,6 +142,7 @@ test("updateEntry keeps only raw diary fields and schedules AI metadata refresh"
     assert.equal(row?.tags, null);
     assert.equal(row?.content, "New content");
     assert.equal(row?.aiStatus, "pending");
+    assert.equal(row?.createdAt?.toISOString(), "2024-01-02T00:00:00.000Z");
     assert.equal(typeof scheduled, "function");
     assert.deepEqual(revalidatedPaths, ["/", "/entries/entry-update"]);
     assert.equal(redirectedTo, "/entries/entry-update");

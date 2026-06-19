@@ -46,7 +46,7 @@ test("POST inserts an entry and schedules AI processing", async () => {
     const response = await handlers.POST(
       new Request("http://localhost/api/entries", {
         method: "POST",
-        body: JSON.stringify({ content: "Route created entry", createdAt: "2024-01-04T07:15" }),
+        body: JSON.stringify({ content: "Route created entry", createdAt: "2024-01-04" }),
         headers: { "content-type": "application/json" },
       }),
     );
@@ -57,7 +57,7 @@ test("POST inserts an entry and schedules AI processing", async () => {
     const row = await fixture.db.query.entries.findFirst({
       where: (fields, { eq }) => eq(fields.id, "api-entry"),
     });
-    assert.equal(row?.createdAt?.toISOString(), "2024-01-04T07:15:00.000Z");
+    assert.equal(row?.createdAt?.toISOString(), "2024-01-04T00:00:00.000Z");
   } finally {
     fixture.cleanup();
   }
