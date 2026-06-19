@@ -70,7 +70,7 @@ test("dashboard view model marks failed AI entries clearly", async () => {
   assert.equal(model.entries[0].statusTone, "danger");
 });
 
-test("dashboard renders search, date, and count in the top navigation controls", () => {
+test("dashboard top navigation only keeps search controls", () => {
   const dashboardPath = new URL("../src/app/(dashboard)/page.tsx", import.meta.url);
   const layoutPath = new URL("../src/app/(dashboard)/layout.tsx", import.meta.url);
   const filtersPath = new URL("../src/components/DashboardFilters.tsx", import.meta.url);
@@ -96,8 +96,14 @@ test("dashboard renders search, date, and count in the top navigation controls",
   assert.doesNotMatch(headerSource, /lg:grid/, "top navigation should not switch between stacked and grid layouts");
   assert.match(headerSource, /overflow-x-auto/, "single-row navigation should scroll horizontally instead of wrapping");
   assert.match(navControlsSource, /DashboardFilters/);
-  assert.match(navControlsSource, /entriesCount=\{filteredEntries\.length\}/);
+  assert.doesNotMatch(navControlsSource, /loadDashboardEntries/);
+  assert.doesNotMatch(navControlsSource, /filterDashboardEntriesByDate/);
+  assert.doesNotMatch(navControlsSource, /getDashboardDatesWithEntries/);
+  assert.doesNotMatch(navControlsSource, /entriesCount/);
+  assert.doesNotMatch(navControlsSource, /date\?:/);
+  assert.doesNotMatch(dashboardSource, /filterDashboardEntriesByDate/);
+  assert.doesNotMatch(dashboardSource, /date\?:/);
   assert.match(filtersSource, /<SearchInput/);
-  assert.match(filtersSource, /<CalendarFilter/);
-  assert.match(filtersSource, /entriesCount/);
+  assert.doesNotMatch(filtersSource, /CalendarFilter/);
+  assert.doesNotMatch(filtersSource, /entriesCount/);
 });

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { EntriesTimelineClient } from '@/components/EntriesTimelineClient';
-import { filterDashboardEntriesByDate, loadDashboardEntries } from '@/lib/dashboard-data';
+import { loadDashboardEntries } from '@/lib/dashboard-data';
 import { messages } from '@/lib/messages';
 import { newEntryPath } from '@/lib/pathname';
 
@@ -34,14 +34,13 @@ export function buildDashboardViewModel(
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; date?: string }>;
+  searchParams: Promise<{ q?: string }>;
 }) {
-  const { q, date } = await searchParams;
+  const { q } = await searchParams;
 
   const allEntries = await loadDashboardEntries(q);
-  const filteredEntries = filterDashboardEntriesByDate(allEntries, date);
 
-  const viewModel = buildDashboardViewModel(filteredEntries, messages, q);
+  const viewModel = buildDashboardViewModel(allEntries, messages, q);
 
   return (
     <div className="space-y-5">

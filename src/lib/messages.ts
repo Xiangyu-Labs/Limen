@@ -15,7 +15,6 @@ export const messages = {
   dashboard: {
     emptyMessage: '还没有记录',
     createFirstEntry: '写一条',
-    entriesCount: '条',
     resultsFor: (query: string) => `“${query}”的搜索结果`,
     untitledEntry: '未命名记录',
   },

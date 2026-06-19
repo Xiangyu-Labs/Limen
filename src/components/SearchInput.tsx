@@ -12,6 +12,7 @@ export function buildSearchHref(currentUrl: string, query: string) {
   const normalized = normalizeSearchQuery(query);
   const url = new URL(currentUrl);
   const params = new URLSearchParams(url.searchParams);
+  params.delete('date');
 
   if (normalized) {
     params.set('q', normalized);
