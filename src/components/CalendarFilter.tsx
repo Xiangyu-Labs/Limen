@@ -15,24 +15,21 @@ import {
   addMonths,
   subMonths,
 } from "date-fns";
-import type { Locale } from "@/lib/i18n/config";
 
 interface CalendarFilterProps {
   datesWithEntries: string[];
   selectedDate?: string;
-  locale: Locale;
 }
 
 const weekDayLabelsZh = ["日", "一", "二", "三", "四", "五", "六"];
-const weekDayLabelsEn = ["S", "M", "T", "W", "T", "F", "S"];
 
-export function CalendarFilter({ datesWithEntries, selectedDate, locale }: CalendarFilterProps) {
+export function CalendarFilter({ datesWithEntries, selectedDate }: CalendarFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const dateSet = new Set(datesWithEntries);
-  const labels = locale === "zh" ? weekDayLabelsZh : weekDayLabelsEn;
+  const labels = weekDayLabelsZh;
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -51,10 +48,7 @@ export function CalendarFilter({ datesWithEntries, selectedDate, locale }: Calen
     router.push(`?${params.toString()}`);
   };
 
-  const monthLabel =
-    locale === "zh"
-      ? format(currentMonth, "yyyy年M月")
-      : format(currentMonth, "MMMM yyyy");
+  const monthLabel = format(currentMonth, "yyyy年M月");
 
   return (
     <div className="rounded-[var(--radius-xl)] border border-border/70 bg-surface p-4 shadow-sm">

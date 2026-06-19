@@ -1,4 +1,4 @@
-export const zhMessages = {
+export const messages = {
   common: {
     timeline: '时间线',
     new: '新建',
@@ -18,7 +18,6 @@ export const zhMessages = {
     entriesCount: '条记录',
     resultsFor: (query: string) => `“${query}”的搜索结果`,
     untitledEntry: '未命名记录',
-    tagsCount: (count: number) => `${count} 个标签`,
   },
   editor: {
     newCapture: '新建记录',
@@ -26,21 +25,15 @@ export const zhMessages = {
     capture: '保存记录',
     save: '保存',
     createHelper: '先记录内容，再让 AI 在后台整理细节。',
-    editHelper: '完善结构化字段，或直接重写原始内容。',
+    editHelper: '只修改原文和时间，AI 会重新整理标题、摘要和标签。',
     characters: (count: number) => `${count} 个字符`,
     saveTo: '保存时间',
     contentPlaceholder: '此刻在想什么？写在这里...',
-    title: '标题',
-    summary: '摘要',
-    tags: '标签',
     time: '时间',
     content: '内容',
     untitledCapture: '未命名记录',
-    summaryPlaceholder: '简短摘要...',
-    tagsPlaceholder: '标签1, 标签2, 标签3',
   },
   entryDetail: {
-    aiEnhanced: 'AI 已增强',
     aiSummary: 'AI 摘要',
     regenerateMetadata: '重新生成 AI 元数据',
   },
@@ -50,7 +43,7 @@ export const zhMessages = {
     subtitle: '登录你的私密日记',
     password: '密码',
     unexpectedError: '发生了意外错误',
-    protectedBy: '端到端加密保护',
+    protectedBy: '单密码保护',
   },
   layout: {
     tagline: '记录 • 整理 • 回看',

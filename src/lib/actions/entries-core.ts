@@ -4,8 +4,7 @@ import { processAIEntry as runAI } from '@/lib/ai/processor';
 import { revalidatePath as nextRevalidatePath } from 'next/cache';
 import { redirect as nextRedirect } from 'next/navigation';
 import { eq, inArray } from 'drizzle-orm';
-import { dashboardPath, entryDetailPath, entryEditPath } from '@/lib/i18n/pathname';
-import type { Locale } from '@/lib/i18n/config';
+import { dashboardPath, entryDetailPath, entryEditPath } from '@/lib/pathname';
 
 type EntryActionDeps = {
   db: typeof appDb;
@@ -30,7 +29,7 @@ export function createEntryActions({
   redirect,
 }: EntryActionDeps) {
   return {
-    async createEntry(locale: Locale, formData: FormData) {
+    async createEntry(formData: FormData) {
       const content = formData.get('content') as string;
       const createdAtInput = formData.get('createdAt') as string | null;
 
@@ -54,54 +53,53 @@ export function createEntryActions({
         });
       });
 
-      revalidatePath(dashboardPath(locale));
-      redirect(dashboardPath(locale));
+      revalidatePath(dashboardPath());
+      redirect(dashboardPath());
     },
 
-    async deleteEntry(locale: Locale, id: string) {
+    async deleteEntry(id: string) {
       await db.delete(entries).where(eq(entries.id, id));
-      revalidatePath(dashboardPath(locale));
-      redirect(dashboardPath(locale));
+      revalidatePath(dashboardPath());
+      redirect(dashboardPath());
     },
 
-    async updateEntry(locale: Locale, id: string, formData: FormData) {
+    async updateEntry(id: string, formData: FormData) {
       const content = (formData.get('content') as string | null)?.trim() ?? '';
       if (!content) {
-        redirect(entryEditPath(locale, id));
+        redirect(entryEditPath(id));
       }
 
-      const title = (formData.get('title') as string | null)?.trim() || null;
-      const summary = (formData.get('summary') as string | null)?.trim() || null;
-      const tagsInput = (formData.get('tags') as string | null)?.trim() || '';
       const createdAtInput = formData.get('createdAt') as string | null;
-
-      const tags = tagsInput
-        ? JSON.stringify(tagsInput.split(',').map(tag => tag.trim()).filter(Boolean))
-        : null;
-
       const createdAt = parseEntryDateTimeInput(createdAtInput);
 
       await db.update(entries).set({
-        title,
-        summary,
-        tags,
+        title: null,
+        summary: null,
+        tags: null,
         content,
+        aiStatus: 'pending',
         createdAt,
         updatedAt: new Date(),
       }).where(eq(entries.id, id));
 
-      revalidatePath(dashboardPath(locale));
-      revalidatePath(entryDetailPath(locale, id));
-      redirect(entryDetailPath(locale, id));
+      await scheduleAI(async () => {
+        await processAIEntry(id, content).catch(err => {
+          console.error(`AI update processing failed for entry ${id}:`, err);
+        });
+      });
+
+      revalidatePath(dashboardPath());
+      revalidatePath(entryDetailPath(id));
+      redirect(entryDetailPath(id));
     },
 
-    async regenerateEntryMetadata(locale: Locale, id: string) {
+    async regenerateEntryMetadata(id: string) {
       const entry = await db.query.entries.findFirst({
         where: eq(entries.id, id),
       });
 
       if (!entry) {
-        redirect(dashboardPath(locale));
+        redirect(dashboardPath());
         return;
       }
 
@@ -118,12 +116,12 @@ export function createEntryActions({
         });
       });
 
-      revalidatePath(dashboardPath(locale));
-      revalidatePath(entryDetailPath(locale, id));
-      redirect(entryDetailPath(locale, id));
+      revalidatePath(dashboardPath());
+      revalidatePath(entryDetailPath(id));
+      redirect(entryDetailPath(id));
     },
 
-    async bulkRegenerateEntryMetadata(locale: Locale, ids: string[]) {
+    async bulkRegenerateEntryMetadata(ids: string[]) {
       const normalizedIds = ids.filter(Boolean);
       if (normalizedIds.length === 0) return;
 
@@ -147,15 +145,15 @@ export function createEntryActions({
         }
       });
 
-      revalidatePath(dashboardPath(locale));
+      revalidatePath(dashboardPath());
     },
 
-    async bulkDeleteEntries(locale: Locale, ids: string[]) {
+    async bulkDeleteEntries(ids: string[]) {
       const normalizedIds = ids.filter(Boolean);
       if (normalizedIds.length === 0) return;
 
       await db.delete(entries).where(inArray(entries.id, normalizedIds));
-      revalidatePath(dashboardPath(locale));
+      revalidatePath(dashboardPath());
     },
   };
 }

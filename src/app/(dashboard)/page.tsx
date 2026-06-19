@@ -5,9 +5,8 @@ import Link from 'next/link';
 import { format, isSameDay } from 'date-fns';
 import { EntriesTimelineClient } from '@/components/EntriesTimelineClient';
 import { CalendarFilter } from '@/components/CalendarFilter';
-import { getMessages } from '@/lib/i18n/getMessages';
-import type { Locale } from '@/lib/i18n/config';
-import { newEntryPath } from '@/lib/i18n/pathname';
+import { messages } from '@/lib/messages';
+import { newEntryPath } from '@/lib/pathname';
 
 export function buildDashboardViewModel(
   allEntries: Array<{
@@ -19,48 +18,29 @@ export function buildDashboardViewModel(
     aiStatus: string | null;
     createdAt: Date | null;
   }>,
-  messages: ReturnType<typeof getMessages>,
+  copy: typeof messages,
   q?: string,
 ) {
   return {
-    heading: q ? messages.dashboard.resultsFor(q) : messages.common.timeline,
-    emptyMessage: messages.dashboard.emptyMessage,
+    heading: q ? copy.dashboard.resultsFor(q) : copy.common.timeline,
+    emptyMessage: copy.dashboard.emptyMessage,
     entries: allEntries.map((entry) => ({
       ...entry,
       tags: entry.tags ? (JSON.parse(entry.tags) as string[]) : [],
-      displayTitle: entry.title || messages.dashboard.untitledEntry,
+      displayTitle: entry.title || copy.dashboard.untitledEntry,
       displaySummary: entry.summary || entry.content,
-      statusLabel:
-        entry.aiStatus === 'pending'
-          ? messages.common.processing
-          : entry.aiStatus === 'failed'
-            ? messages.common.failed
-            : entry.aiStatus === 'done'
-              ? messages.common.ready
-              : null,
-      statusTone:
-        entry.aiStatus === 'pending'
-          ? 'warning'
-          : entry.aiStatus === 'failed'
-            ? 'danger'
-            : entry.aiStatus === 'done'
-              ? 'success'
-              : 'muted',
-      metaLine: [messages.dashboard.tagsCount(entry.tags ? (JSON.parse(entry.tags) as string[]).length : 0)],
+      statusLabel: entry.aiStatus === 'failed' ? copy.common.failed : null,
+      statusTone: entry.aiStatus === 'failed' ? 'danger' : 'muted',
     })),
   };
 }
 
 export default async function DashboardPage({
-  params,
   searchParams,
 }: {
-  params: Promise<{ locale: string }>;
   searchParams: Promise<{ q?: string; date?: string }>;
 }) {
-  const [{ locale: localeParam }, { q, date }] = await Promise.all([params, searchParams]);
-  const locale = localeParam as Locale;
-  const messages = getMessages(locale);
+  const { q, date } = await searchParams;
 
   let query = db.select().from(entries).orderBy(desc(entries.createdAt));
 
@@ -105,17 +85,17 @@ export default async function DashboardPage({
         </div>
       </div>
 
-      <CalendarFilter datesWithEntries={datesWithEntries} selectedDate={date} locale={locale} />
+      <CalendarFilter datesWithEntries={datesWithEntries} selectedDate={date} />
 
       {viewModel.entries.length === 0 ? (
         <div className="rounded-[var(--radius-xl)] border border-border bg-surface py-20 flex flex-col items-center justify-center text-center shadow-sm">
           <p className="text-muted text-sm font-medium">{viewModel.emptyMessage}</p>
-          <Link href={newEntryPath(locale)} className="mt-6 text-primary text-sm font-bold uppercase tracking-widest hover:underline active:scale-[0.99] transition-transform">
+          <Link href={newEntryPath()} className="mt-6 text-primary text-sm font-bold uppercase tracking-widest hover:underline active:scale-[0.99] transition-transform">
             {messages.dashboard.createFirstEntry}
           </Link>
         </div>
       ) : (
-        <EntriesTimelineClient entries={viewModel.entries} locale={locale} />
+        <EntriesTimelineClient entries={viewModel.entries} />
       )}
     </div>
   );

@@ -9,9 +9,8 @@ import { deleteEntry, regenerateEntryMetadata } from '@/lib/actions/entries';
 import { FormattedDate } from '@/components/FormattedDate';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import type { Locale } from '@/lib/i18n/config';
-import { getMessages } from '@/lib/i18n/getMessages';
-import { dashboardPath, entryEditPath } from '@/lib/i18n/pathname';
+import { messages } from '@/lib/messages';
+import { dashboardPath, entryEditPath } from '@/lib/pathname';
 
 export function buildEntryDetailViewModel(
   entry: {
@@ -22,38 +21,25 @@ export function buildEntryDetailViewModel(
     aiStatus: string | null;
     createdAt: Date | null;
   },
-  messages: ReturnType<typeof getMessages>
+  copy: typeof messages
 ) {
   return {
     ...entry,
-    displayTitle: entry.title || messages.editor.untitledCapture,
+    displayTitle: entry.title || copy.editor.untitledCapture,
     summary: entry.aiStatus === 'done' ? entry.summary : null,
     tags: entry.tags ? (JSON.parse(entry.tags) as string[]) : [],
-    showAIEnhancedBadge: entry.aiStatus === 'done',
-    statusLabel:
-      entry.aiStatus === 'done'
-        ? messages.entryDetail.aiEnhanced
-        : entry.aiStatus === 'failed'
-          ? messages.common.failed
-          : messages.common.processing,
-    statusTone:
-      entry.aiStatus === 'done'
-        ? 'success'
-        : entry.aiStatus === 'failed'
-          ? 'danger'
-          : 'warning',
-    regenerateLabel: messages.entryDetail.regenerateMetadata,
+    statusLabel: entry.aiStatus === 'failed' ? copy.common.failed : null,
+    statusTone: entry.aiStatus === 'failed' ? 'danger' : 'muted',
+    regenerateLabel: copy.entryDetail.regenerateMetadata,
   };
 }
 
 export default async function EntryDetailPage({
   params,
 }: {
-  params: Promise<{ id: string; locale: string }>;
+  params: Promise<{ id: string }>;
 }) {
-  const { id, locale: localeParam } = await params;
-  const locale = localeParam as Locale;
-  const messages = getMessages(locale);
+  const { id } = await params;
 
   const entry = await db.query.entries.findFirst({
     where: eq(entries.id, id),
@@ -69,14 +55,14 @@ export default async function EntryDetailPage({
     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" asChild className="-ml-2 text-muted hover:text-primary">
-          <Link href={dashboardPath(locale)}>
+          <Link href={dashboardPath()}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             <span className="text-[10px] font-bold uppercase tracking-widest">{messages.common.timeline}</span>
           </Link>
         </Button>
 
         <div className="flex items-center gap-2">
-          <form action={regenerateEntryMetadata.bind(null, locale, id)}>
+          <form action={regenerateEntryMetadata.bind(null, id)}>
             <Button
               variant="secondary"
               size="sm"
@@ -89,13 +75,13 @@ export default async function EntryDetailPage({
           </form>
 
           <Button variant="ghost" size="sm" asChild className="text-muted hover:text-primary">
-            <Link href={entryEditPath(locale, id)}>
+            <Link href={entryEditPath(id)}>
               <Pencil className="h-4 w-4 mr-2" />
               <span className="text-[10px] font-bold uppercase tracking-widest">{messages.common.edit}</span>
             </Link>
           </Button>
 
-          <form action={deleteEntry.bind(null, locale, id)}>
+          <form action={deleteEntry.bind(null, id)}>
             <Button
               variant="ghost"
               size="sm"
@@ -115,18 +101,18 @@ export default async function EntryDetailPage({
             <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
               <div className="flex items-center gap-2 rounded-full bg-surface2 px-3 py-1.5">
                 <Calendar className="h-3.5 w-3.5" />
-                <FormattedDate date={entry.createdAt!} type="full" locale={locale} />
+                <FormattedDate date={entry.createdAt!} type="full" />
               </div>
               <div className="flex items-center gap-2 rounded-full bg-surface2 px-3 py-1.5">
                 <Clock className="h-3.5 w-3.5" />
-                <FormattedDate date={entry.createdAt!} type="time" locale={locale} />
+                <FormattedDate date={entry.createdAt!} type="time" />
               </div>
-              <div className={`flex items-center gap-2 rounded-full px-3 py-1.5 ${
-                viewModel.statusTone === 'success' ? 'bg-primary/10 text-primary' : 'bg-warning/10 text-warning'
-              }`}>
-                <Sparkles className="h-3.5 w-3.5" />
-                {viewModel.statusLabel}
-              </div>
+              {viewModel.statusLabel && (
+                <div className="flex items-center gap-2 rounded-full bg-danger/10 px-3 py-1.5 text-danger">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {viewModel.statusLabel}
+                </div>
+              )}
             </div>
 
             <div className="space-y-6">

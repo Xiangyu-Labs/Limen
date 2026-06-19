@@ -5,9 +5,8 @@ import { useTransition } from "react";
 import { Calendar, ChevronRight, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { bulkRegenerateEntryMetadata } from "@/lib/actions/entries";
-import type { Locale } from "@/lib/i18n/config";
-import { getMessages } from "@/lib/i18n/getMessages";
-import { entryDetailPath } from "@/lib/i18n/pathname";
+import { messages } from "@/lib/messages";
+import { entryDetailPath } from "@/lib/pathname";
 
 type TimelineEntry = {
   id: string;
@@ -16,36 +15,31 @@ type TimelineEntry = {
   statusLabel: string | null;
   statusTone: string;
   tags: string[];
-  metaLine: string[];
   createdAt: Date | null;
 };
 
 function toneClasses(tone: string) {
-  if (tone === "warning") return "bg-warning/10 text-warning";
   if (tone === "danger") return "bg-danger/10 text-danger";
   return "bg-primary/10 text-primary";
 }
 
 function toneDotClasses(tone: string) {
-  if (tone === "warning") return "bg-warning";
   if (tone === "danger") return "bg-danger";
   return "bg-primary";
 }
 
-function formatEntryDate(date: Date | null, locale: Locale): string {
-  if (!date) return locale === 'zh' ? '未知' : 'Unknown';
-  return new Intl.DateTimeFormat(locale === 'zh' ? 'zh-CN' : 'en-US', { month: "2-digit", day: "2-digit" }).format(date);
+function formatEntryDate(date: Date | null): string {
+  if (!date) return messages.common.unknown;
+  return new Intl.DateTimeFormat('zh-CN', { month: "2-digit", day: "2-digit" }).format(date);
 }
 
 interface EntriesTimelineClientProps {
   entries: TimelineEntry[];
-  locale: Locale;
 }
 
-export function EntriesTimelineClient({ entries, locale }: EntriesTimelineClientProps) {
+export function EntriesTimelineClient({ entries }: EntriesTimelineClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const messages = getMessages(locale);
 
   const failedIds = entries
     .filter((entry) => entry.statusTone === 'danger')
@@ -54,7 +48,7 @@ export function EntriesTimelineClient({ entries, locale }: EntriesTimelineClient
   const runRetryAllFailed = () => {
     if (failedIds.length === 0) return;
     startTransition(async () => {
-      await bulkRegenerateEntryMetadata(locale, failedIds);
+      await bulkRegenerateEntryMetadata(failedIds);
       router.refresh();
     });
   };
@@ -82,7 +76,7 @@ export function EntriesTimelineClient({ entries, locale }: EntriesTimelineClient
         {entries.map((entry) => (
           <Link
             key={entry.id}
-            href={entryDetailPath(locale, entry.id)}
+            href={entryDetailPath(entry.id)}
             className="group overflow-hidden rounded-[var(--radius-xl)] border border-border/80 bg-surface p-5 active:scale-[0.99] hover:border-primary/20 hover:shadow-md transition-all duration-200 md:p-6"
           >
             <div className="flex min-w-0 items-start justify-between gap-3 sm:gap-6">
@@ -99,7 +93,7 @@ export function EntriesTimelineClient({ entries, locale }: EntriesTimelineClient
                 <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-muted">
                   <span className="flex items-center gap-1.5 rounded-full bg-surface2 px-2.5 py-1">
                     <Calendar className="h-3 w-3" />
-                    {formatEntryDate(entry.createdAt, locale)}
+                    {formatEntryDate(entry.createdAt)}
                   </span>
                   {entry.statusLabel && (
                     <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.2em] ${toneClasses(entry.statusTone)}`}>

@@ -1,10 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getMessages } from "../src/lib/i18n/getMessages";
+import { messages } from "@/lib/messages";
 
-test("entry detail view model exposes summary and tags for AI-complete entries", async () => {
-  const { buildEntryDetailViewModel } = await import("@/app/[locale]/(dashboard)/entries/[id]/page");
-  const messages = getMessages('en');
+test("entry detail view model exposes summary and tags without success status", async () => {
+  const { buildEntryDetailViewModel } = await import("@/app/(dashboard)/entries/[id]/page");
   const model = buildEntryDetailViewModel({
     content: "# Heading",
     title: "Enhanced title",
@@ -17,14 +16,12 @@ test("entry detail view model exposes summary and tags for AI-complete entries",
   assert.equal(model.displayTitle, "Enhanced title");
   assert.equal(model.summary, "Enhanced summary");
   assert.deepEqual(model.tags, ["alpha", "beta"]);
-  assert.equal(model.showAIEnhancedBadge, true);
-  assert.equal(model.statusLabel, "AI Enhanced");
-  assert.equal(model.statusTone, "success");
+  assert.equal(model.statusLabel, null);
+  assert.equal(model.statusTone, "muted");
 });
 
-test("entry detail view model falls back for incomplete entries", async () => {
-  const { buildEntryDetailViewModel } = await import("@/app/[locale]/(dashboard)/entries/[id]/page");
-  const messages = getMessages('en');
+test("entry detail view model hides incomplete AI status", async () => {
+  const { buildEntryDetailViewModel } = await import("@/app/(dashboard)/entries/[id]/page");
   const model = buildEntryDetailViewModel({
     content: "Plain content",
     title: null,
@@ -34,17 +31,15 @@ test("entry detail view model falls back for incomplete entries", async () => {
     createdAt: new Date(),
   } as never, messages);
 
-  assert.equal(model.displayTitle, "Untitled Capture");
+  assert.equal(model.displayTitle, "未命名记录");
   assert.equal(model.summary, null);
   assert.deepEqual(model.tags, []);
-  assert.equal(model.showAIEnhancedBadge, false);
-  assert.equal(model.statusLabel, "Processing");
-  assert.equal(model.statusTone, "warning");
+  assert.equal(model.statusLabel, null);
+  assert.equal(model.statusTone, "muted");
 });
 
 test("entry detail view model exposes regenerate action copy", async () => {
-  const { buildEntryDetailViewModel } = await import("@/app/[locale]/(dashboard)/entries/[id]/page");
-  const messages = getMessages('en');
+  const { buildEntryDetailViewModel } = await import("@/app/(dashboard)/entries/[id]/page");
   const model = buildEntryDetailViewModel({
     content: "Plain content",
     title: null,
@@ -54,7 +49,7 @@ test("entry detail view model exposes regenerate action copy", async () => {
     createdAt: new Date(),
   } as never, messages);
 
-  assert.equal(model.regenerateLabel, "Regenerate AI Metadata");
-  assert.equal(model.statusLabel, "Failed");
+  assert.equal(model.regenerateLabel, "重新生成 AI 元数据");
+  assert.equal(model.statusLabel, "失败");
   assert.equal(model.statusTone, "danger");
 });

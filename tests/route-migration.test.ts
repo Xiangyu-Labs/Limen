@@ -1,14 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-test("assertLocale rejects invalid locale", async () => {
-  const { assertLocale } = await import("@/app/[locale]/layout");
-  assert.throws(() => assertLocale("fr"));
-});
-
-test("redirect helpers only generate locale-prefixed routes", async () => {
-  const { dashboardPath, entryDetailPath, loginPath } = await import("@/lib/i18n/pathname");
-  assert.equal(dashboardPath("zh"), "/zh");
-  assert.equal(loginPath("en"), "/en/login");
-  assert.equal(entryDetailPath("zh", "entry-1"), "/zh/entries/entry-1");
+test("redirect helpers generate Chinese-only root routes", async () => {
+  const { dashboardPath, entryDetailPath, loginPath, newEntryPath } = await import("@/lib/pathname");
+  assert.equal(dashboardPath(), "/");
+  assert.equal(loginPath(), "/login");
+  assert.equal(newEntryPath(), "/entries/new");
+  assert.equal(entryDetailPath("entry-1"), "/entries/entry-1");
 });

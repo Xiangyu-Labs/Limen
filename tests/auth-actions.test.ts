@@ -24,10 +24,10 @@ test("login stores a session and redirects on success", async () => {
   const formData = new FormData();
   formData.set("password", "secret");
 
-  await assert.rejects(() => actions.login("zh", formData), /redirected/);
+  await assert.rejects(() => actions.login(formData), /redirected/);
 
   assert.equal(cookieWrites.length, 1);
-  assert.equal(redirectedTo, "/zh");
+  assert.equal(redirectedTo, "/");
 });
 
 test("login returns an error for invalid password", async () => {
@@ -48,12 +48,12 @@ test("login returns an error for invalid password", async () => {
 
   const formData = new FormData();
   formData.set("password", "wrong");
-  const result = await actions.login("en", formData);
+  const result = await actions.login(formData);
 
   assert.deepEqual(result, { error: "Invalid password" });
 });
 
-test("logout redirects to locale login", async () => {
+test("logout redirects to login", async () => {
   const { createAuthActions } = await import("@/lib/auth/action-core");
 
   let redirectedTo = "";
@@ -70,6 +70,6 @@ test("logout redirects to locale login", async () => {
     },
   });
 
-  await assert.rejects(() => actions.logout("zh"), /redirected/);
-  assert.equal(redirectedTo, "/zh/login");
+  await assert.rejects(() => actions.logout(), /redirected/);
+  assert.equal(redirectedTo, "/login");
 });

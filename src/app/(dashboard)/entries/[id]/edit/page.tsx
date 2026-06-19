@@ -9,9 +9,8 @@ import { Button } from '@/components/ui/button';
 import { EntryEditorShell, buildEntryEditorShellModel } from '@/components/EntryEditorShell';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { Locale } from '@/lib/i18n/config';
-import { getMessages } from '@/lib/i18n/getMessages';
-import { entryDetailPath } from '@/lib/i18n/pathname';
+import { messages } from '@/lib/messages';
+import { entryDetailPath } from '@/lib/pathname';
 
 export function formatEntryDateTimeForInput(date: Date | null) {
   return date ? date.toISOString().slice(0, 16) : '';
@@ -19,18 +18,12 @@ export function formatEntryDateTimeForInput(date: Date | null) {
 
 export function buildEditEntryFormModel(entry: {
   id: string;
-  title: string | null;
-  summary: string | null;
   content: string;
-  tags: string | null;
   createdAt: Date | null;
 }) {
   return {
     id: entry.id,
-    title: entry.title ?? '',
-    summary: entry.summary ?? '',
     content: entry.content,
-    tags: entry.tags ? (JSON.parse(entry.tags) as string[]).join(', ') : '',
     createdAt: formatEntryDateTimeForInput(entry.createdAt),
   };
 }
@@ -38,11 +31,9 @@ export function buildEditEntryFormModel(entry: {
 export default async function EditEntryPage({
   params,
 }: {
-  params: Promise<{ id: string; locale: string }>;
+  params: Promise<{ id: string }>;
 }) {
-  const { id, locale: localeParam } = await params;
-  const locale = localeParam as Locale;
-  const messages = getMessages(locale);
+  const { id } = await params;
 
   const entry = await db.query.entries.findFirst({
     where: eq(entries.id, id),
@@ -53,13 +44,13 @@ export default async function EditEntryPage({
   }
 
   const model = buildEditEntryFormModel(entry);
-  const shell = buildEntryEditorShellModel({ mode: 'edit', contentLength: model.content.length, locale });
+  const shell = buildEntryEditorShellModel({ mode: 'edit', contentLength: model.content.length });
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild className="rounded-full">
-          <Link href={entryDetailPath(locale, id)}>
+          <Link href={entryDetailPath(id)}>
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
@@ -67,22 +58,7 @@ export default async function EditEntryPage({
       </div>
 
       <EntryEditorShell title={shell.title} helperText={shell.helperText} metaLabel={shell.metaLabel}>
-        <form action={updateEntry.bind(null, locale, id)} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-muted uppercase tracking-widest">{messages.editor.title}</label>
-            <Input name="title" defaultValue={model.title} placeholder={messages.editor.untitledCapture} />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-muted uppercase tracking-widest">{messages.editor.summary}</label>
-            <Textarea name="summary" defaultValue={model.summary} placeholder={messages.editor.summaryPlaceholder} className="min-h-[100px]" />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-muted uppercase tracking-widest">{messages.editor.tags}</label>
-            <Input name="tags" defaultValue={model.tags} placeholder={messages.editor.tagsPlaceholder} />
-          </div>
-
+        <form action={updateEntry.bind(null, id)} className="space-y-6">
           <div className="space-y-2">
             <label className="text-[10px] font-bold text-muted uppercase tracking-widest">{messages.editor.time}</label>
             <Input name="createdAt" type="datetime-local" defaultValue={model.createdAt} />

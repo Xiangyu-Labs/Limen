@@ -1,18 +1,13 @@
 import { Card } from '@/components/ui/card';
-import type { Locale } from '@/lib/i18n/config';
-import { getMessages } from '@/lib/i18n/getMessages';
+import { messages } from '@/lib/messages';
 
 export function buildEntryEditorShellModel({
   mode,
   contentLength,
-  locale = 'en',
 }: {
   mode: 'create' | 'edit';
   contentLength: number;
-  locale?: Locale;
 }) {
-  const messages = getMessages(locale);
-
   return {
     title: mode === 'create' ? messages.editor.newCapture : messages.editor.editEntry,
     primaryActionLabel: mode === 'create' ? messages.editor.capture : messages.editor.save,
@@ -28,17 +23,13 @@ export function EntryEditorShell({
   title,
   helperText,
   metaLabel,
-  locale = 'en',
   children,
 }: {
   title: string;
   helperText: string;
   metaLabel: string;
-  locale?: Locale;
   children: React.ReactNode;
 }) {
-  const messages = getMessages(locale);
-
   return (
     <Card className="overflow-hidden border-border/70 shadow-xl shadow-black/5">
       <div className="border-b border-border bg-surface px-6 py-5 md:px-8">

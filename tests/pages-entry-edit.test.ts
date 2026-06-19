@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 test("edit entry form model maps entry fields to editable values", async () => {
-  const { buildEditEntryFormModel } = await import("../src/app/[locale]/(dashboard)/entries/[id]/edit/page");
+  const { buildEditEntryFormModel } = await import("@/app/(dashboard)/entries/[id]/edit/page");
   const model = buildEditEntryFormModel({
     id: "entry-1",
     title: "Title",
@@ -13,18 +13,18 @@ test("edit entry form model maps entry fields to editable values", async () => {
   } as never);
 
   assert.equal(model.id, "entry-1");
-  assert.equal(model.title, "Title");
-  assert.equal(model.summary, "Summary");
   assert.equal(model.content, "Body");
-  assert.equal(model.tags, "alpha, beta");
   assert.equal(model.createdAt, "2024-01-02T09:30");
+  assert.equal("title" in model, false);
+  assert.equal("summary" in model, false);
+  assert.equal("tags" in model, false);
 });
 
 test("entry editor shell model exposes edit-mode copy", async () => {
   const { buildEntryEditorShellModel } = await import("../src/components/EntryEditorShell.tsx");
   const model = buildEntryEditorShellModel({ mode: "edit", contentLength: 12 });
 
-  assert.equal(model.title, "Edit Entry");
-  assert.equal(model.primaryActionLabel, "Save");
-  assert.equal(model.helperText, "Refine the structured fields or rewrite the original capture.");
+  assert.equal(model.title, "编辑记录");
+  assert.equal(model.primaryActionLabel, "保存");
+  assert.equal(model.helperText, "只修改原文和时间，AI 会重新整理标题、摘要和标签。");
 });

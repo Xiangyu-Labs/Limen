@@ -1,19 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getMessages } from "../src/lib/i18n/getMessages";
+import { messages } from "@/lib/messages";
 
 test("dashboard view model exposes empty state copy", async () => {
-  const { buildDashboardViewModel } = await import("@/app/[locale]/(dashboard)/page");
-  const messages = getMessages('en');
+  const { buildDashboardViewModel } = await import("@/app/(dashboard)/page");
   const model = buildDashboardViewModel([], messages, undefined);
 
-  assert.equal(model.heading, "Timeline");
-  assert.equal(model.emptyMessage, "No entries found. Start capturing your thoughts.");
+  assert.equal(model.heading, "时间线");
+  assert.equal(model.emptyMessage, "还没有任何记录，开始写下你的想法吧。");
 });
 
-test("dashboard view model marks pending entries as processing", async () => {
-  const { buildDashboardViewModel } = await import("@/app/[locale]/(dashboard)/page");
-  const messages = getMessages('en');
+test("dashboard view model hides pending AI status", async () => {
+  const { buildDashboardViewModel } = await import("@/app/(dashboard)/page");
   const model = buildDashboardViewModel([
     {
       id: "1",
@@ -26,15 +24,13 @@ test("dashboard view model marks pending entries as processing", async () => {
     } as never,
   ], messages, undefined);
 
-  assert.equal(model.entries[0].statusLabel, "Processing");
-  assert.equal(model.entries[0].statusTone, "warning");
-  assert.equal(model.entries[0].displayTitle, "Untitled Entry");
-  assert.equal(model.entries[0].metaLine[0], "0 tags");
+  assert.equal(model.entries[0].statusLabel, null);
+  assert.equal(model.entries[0].statusTone, "muted");
+  assert.equal(model.entries[0].displayTitle, "未命名记录");
 });
 
-test("dashboard view model prefers AI-enhanced title, summary, and tags", async () => {
-  const { buildDashboardViewModel } = await import("@/app/[locale]/(dashboard)/page");
-  const messages = getMessages('en');
+test("dashboard view model prefers AI-enhanced title, summary, and tags without success status", async () => {
+  const { buildDashboardViewModel } = await import("@/app/(dashboard)/page");
   const model = buildDashboardViewModel([
     {
       id: "1",
@@ -47,18 +43,16 @@ test("dashboard view model prefers AI-enhanced title, summary, and tags", async 
     } as never,
   ], messages, "focus");
 
-  assert.equal(model.heading, 'Results for "focus"');
+  assert.equal(model.heading, "“focus”的搜索结果");
   assert.equal(model.entries[0].displayTitle, "Enhanced title");
   assert.equal(model.entries[0].displaySummary, "Enhanced summary");
-  assert.equal(model.entries[0].statusLabel, "Ready");
-  assert.equal(model.entries[0].statusTone, "success");
-  assert.equal(model.entries[0].metaLine[0], "2 tags");
+  assert.equal(model.entries[0].statusLabel, null);
+  assert.equal(model.entries[0].statusTone, "muted");
   assert.deepEqual(model.entries[0].tags, ["one", "two"]);
 });
 
 test("dashboard view model marks failed AI entries clearly", async () => {
-  const { buildDashboardViewModel } = await import("@/app/[locale]/(dashboard)/page");
-  const messages = getMessages('en');
+  const { buildDashboardViewModel } = await import("@/app/(dashboard)/page");
   const model = buildDashboardViewModel([
     {
       id: "1",
@@ -71,7 +65,6 @@ test("dashboard view model marks failed AI entries clearly", async () => {
     } as never,
   ], messages, undefined);
 
-  assert.equal(model.entries[0].statusLabel, "Failed");
+  assert.equal(model.entries[0].statusLabel, "失败");
   assert.equal(model.entries[0].statusTone, "danger");
 });
-

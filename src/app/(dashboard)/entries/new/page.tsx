@@ -1,14 +1,13 @@
 'use client';
 
-import { use, useState } from 'react';
+import { useState } from 'react';
 import { Save, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { createEntry } from '@/lib/actions/entries';
 import { Button } from '@/components/ui/button';
 import { EntryEditorShell, buildEntryEditorShellModel } from '@/components/EntryEditorShell';
-import type { Locale } from '@/lib/i18n/config';
-import { getMessages } from '@/lib/i18n/getMessages';
-import { dashboardPath } from '@/lib/i18n/pathname';
+import { messages } from '@/lib/messages';
+import { dashboardPath } from '@/lib/pathname';
 
 export function getDefaultCreatedAtValue(now = new Date()) {
   return now.toISOString().slice(0, 16);
@@ -24,24 +23,17 @@ export function isEntrySubmitDisabled({
   return loading || !content.trim();
 }
 
-export default function NewEntryPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale: localeParam } = use(params);
-  const locale = localeParam as Locale;
-  const messages = getMessages(locale);
+export default function NewEntryPage() {
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState('');
   const [createdAt, setCreatedAt] = useState(getDefaultCreatedAtValue());
-  const shell = buildEntryEditorShellModel({ mode: 'create', contentLength: content.length, locale });
+  const shell = buildEntryEditorShellModel({ mode: 'create', contentLength: content.length });
 
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild className="rounded-full">
-          <Link href={dashboardPath(locale)}>
+          <Link href={dashboardPath()}>
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
@@ -52,7 +44,7 @@ export default function NewEntryPage({
         <form
           action={async (formData) => {
             setLoading(true);
-            await createEntry(locale, formData);
+            await createEntry(formData);
           }}
           className="flex h-[75vh] flex-col"
         >

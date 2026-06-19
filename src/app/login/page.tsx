@@ -3,38 +3,25 @@
 import { useState } from 'react';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { login } from '@/lib/auth/actions';
-import { Lock, BookOpen } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import type { Locale } from '@/lib/i18n/config';
+import { messages } from '@/lib/messages';
 
-export function getLoginSubmitLabel(locale: Locale, loading: boolean) {
-  if (locale === 'zh') {
-    return loading ? '认证中...' : '进入日记';
-  }
-
-  return loading ? 'Authenticating...' : 'Access Diary';
+export function getLoginSubmitLabel(loading: boolean) {
+  return loading ? messages.login.submitLoading : messages.login.submitIdle;
 }
 
-export default function LoginPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
+export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [locale, setLocale] = useState<Locale>('en');
-
-  void params.then(({ locale: localeParam }) => {
-    setLocale(localeParam as Locale);
-  });
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
     setError(null);
     try {
-      const result = await login(locale, formData);
+      const result = await login(formData);
       if (result?.error) {
         setError(result.error);
         setLoading(false);
@@ -43,7 +30,7 @@ export default function LoginPage({
       if (isRedirectError(error)) {
         throw error;
       }
-      setError(locale === 'zh' ? '发生了意外错误' : 'An unexpected error occurred');
+      setError(messages.login.unexpectedError);
       setLoading(false);
     }
   }
@@ -58,7 +45,7 @@ export default function LoginPage({
           <div className="space-y-1">
             <h1 className="text-2xl font-bold text-text tracking-tight">Limen</h1>
             <p className="text-xs font-bold text-muted uppercase tracking-widest">
-              {locale === 'zh' ? '登录你的私密日记' : 'Sign in to your private diary'}
+              {messages.login.subtitle}
             </p>
           </div>
         </CardHeader>
@@ -67,7 +54,7 @@ export default function LoginPage({
           <form action={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-muted uppercase tracking-widest">
-                {locale === 'zh' ? '密码' : 'Password'}
+                {messages.login.password}
               </label>
               <Input
                 name="password"
@@ -90,12 +77,12 @@ export default function LoginPage({
               disabled={loading}
               className="w-full h-12 text-sm font-bold uppercase tracking-widest"
             >
-              {getLoginSubmitLabel(locale, loading)}
+              {getLoginSubmitLabel(loading)}
             </Button>
           </form>
 
           <p className="mt-8 text-center text-[10px] text-muted font-bold uppercase tracking-widest opacity-60">
-            {locale === 'zh' ? '端到端加密保护' : 'Protected by End-to-End Encryption'}
+            {messages.login.protectedBy}
           </p>
         </CardContent>
       </Card>

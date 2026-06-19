@@ -19,7 +19,7 @@ test("createEntry returns an error for blank content", async () => {
 
     const formData = new FormData();
     formData.set("content", "   ");
-    const result = await actions.createEntry("en", formData);
+    const result = await actions.createEntry(formData);
 
     assert.deepEqual(result, { error: "Content is required" });
   } finally {
@@ -27,7 +27,7 @@ test("createEntry returns an error for blank content", async () => {
   }
 });
 
-test("createEntry inserts a pending entry and redirects within locale", async () => {
+test("createEntry inserts a pending entry and redirects to dashboard", async () => {
   const { createEntryActions } = await import("@/lib/actions/entries-core");
   const { eq } = await import("drizzle-orm");
   const { entries } = await import("@/lib/db/schema");
@@ -61,15 +61,15 @@ test("createEntry inserts a pending entry and redirects within locale", async ()
     formData.set("content", "Ship locale-aware redirects");
     formData.set("createdAt", "2024-01-03T11:45");
 
-    await assert.rejects(() => actions.createEntry("zh", formData), /redirected/);
+    await assert.rejects(() => actions.createEntry(formData), /redirected/);
 
     const row = await fixture.db.query.entries.findFirst({
       where: eq(entries.id, "entry-created"),
     });
 
     assert.equal(row?.aiStatus, "pending");
-    assert.equal(revalidatedPath, "/zh");
-    assert.equal(redirectedTo, "/zh");
+    assert.equal(revalidatedPath, "/");
+    assert.equal(redirectedTo, "/");
     assert.equal(typeof scheduled, "function");
 
     await scheduled?.();
@@ -82,7 +82,7 @@ test("createEntry inserts a pending entry and redirects within locale", async ()
   }
 });
 
-test("updateEntry redirects to locale detail page", async () => {
+test("updateEntry keeps only raw diary fields and schedules AI metadata refresh", async () => {
   const { createEntryActions } = await import("@/lib/actions/entries-core");
   const { eq } = await import("drizzle-orm");
   const { entries } = await import("@/lib/db/schema");
@@ -101,13 +101,19 @@ test("updateEntry redirects to locale detail page", async () => {
 
   let revalidatedPaths: string[] = [];
   let redirectedTo = "";
+  let scheduled: (() => Promise<void>) | null = null;
+  let processed: { id: string; content: string } | null = null;
 
   try {
     const actions = createEntryActions({
       db: fixture.db,
       createId: () => "unused",
-      scheduleAI: () => {},
-      processAIEntry: async () => {},
+      scheduleAI: (job) => {
+        scheduled = job;
+      },
+      processAIEntry: async (id, content) => {
+        processed = { id, content };
+      },
       revalidatePath: (path: string) => {
         revalidatedPaths.push(path);
       },
@@ -118,27 +124,38 @@ test("updateEntry redirects to locale detail page", async () => {
     });
 
     const formData = new FormData();
-    formData.set("title", "New title");
-    formData.set("summary", "New summary");
-    formData.set("tags", "alpha, beta");
+    formData.set("title", "New title should be ignored");
+    formData.set("summary", "New summary should be ignored");
+    formData.set("tags", "alpha, beta should be ignored");
     formData.set("content", "New content");
     formData.set("createdAt", "2024-01-02T09:30");
 
-    await assert.rejects(() => actions.updateEntry("zh", "entry-update", formData), /redirected/);
+    await assert.rejects(() => actions.updateEntry("entry-update", formData), /redirected/);
 
     const row = await fixture.db.query.entries.findFirst({
       where: eq(entries.id, "entry-update"),
     });
 
-    assert.equal(row?.title, "New title");
-    assert.deepEqual(revalidatedPaths, ["/zh", "/zh/entries/entry-update"]);
-    assert.equal(redirectedTo, "/zh/entries/entry-update");
+    assert.equal(row?.title, null);
+    assert.equal(row?.summary, null);
+    assert.equal(row?.tags, null);
+    assert.equal(row?.content, "New content");
+    assert.equal(row?.aiStatus, "pending");
+    assert.equal(typeof scheduled, "function");
+    assert.deepEqual(revalidatedPaths, ["/", "/entries/entry-update"]);
+    assert.equal(redirectedTo, "/entries/entry-update");
+
+    await scheduled?.();
+    assert.deepEqual(processed, {
+      id: "entry-update",
+      content: "New content",
+    });
   } finally {
     fixture.cleanup();
   }
 });
 
-test("deleteEntry removes an existing entry and redirects to locale dashboard", async () => {
+test("deleteEntry removes an existing entry and redirects to dashboard", async () => {
   const { createEntryActions } = await import("@/lib/actions/entries-core");
   const { eq } = await import("drizzle-orm");
   const { entries } = await import("@/lib/db/schema");
@@ -166,20 +183,20 @@ test("deleteEntry removes an existing entry and redirects to locale dashboard", 
       },
     });
 
-    await assert.rejects(() => actions.deleteEntry("zh", "entry-delete"), /redirected/);
+    await assert.rejects(() => actions.deleteEntry("entry-delete"), /redirected/);
 
     const row = await fixture.db.query.entries.findFirst({
       where: eq(entries.id, "entry-delete"),
     });
 
     assert.equal(row, undefined);
-    assert.equal(redirectedTo, "/zh");
+    assert.equal(redirectedTo, "/");
   } finally {
     fixture.cleanup();
   }
 });
 
-test("regenerateEntryMetadata resets status and redirects within locale", async () => {
+test("regenerateEntryMetadata resets status and redirects to detail", async () => {
   const { createEntryActions } = await import("@/lib/actions/entries-core");
   const { eq } = await import("drizzle-orm");
   const { entries } = await import("@/lib/db/schema");
@@ -217,7 +234,7 @@ test("regenerateEntryMetadata resets status and redirects within locale", async 
       },
     });
 
-    await assert.rejects(() => actions.regenerateEntryMetadata("en", "entry-regenerate"), /redirected/);
+    await assert.rejects(() => actions.regenerateEntryMetadata("entry-regenerate"), /redirected/);
 
     const row = await fixture.db.query.entries.findFirst({
       where: eq(entries.id, "entry-regenerate"),
@@ -225,8 +242,8 @@ test("regenerateEntryMetadata resets status and redirects within locale", async 
 
     assert.equal(row?.aiStatus, "pending");
     assert.equal(typeof scheduled, "function");
-    assert.deepEqual(revalidatedPaths, ["/en", "/en/entries/entry-regenerate"]);
-    assert.equal(redirectedTo, "/en/entries/entry-regenerate");
+    assert.deepEqual(revalidatedPaths, ["/", "/entries/entry-regenerate"]);
+    assert.equal(redirectedTo, "/entries/entry-regenerate");
   } finally {
     fixture.cleanup();
   }

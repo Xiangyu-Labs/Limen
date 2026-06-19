@@ -2,31 +2,23 @@ import Link from 'next/link';
 import { PlusCircle, LogOut, BookOpen } from 'lucide-react';
 import { logout } from '@/lib/auth/actions';
 import { SearchInput } from '@/components/SearchInput';
-import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 import { Suspense } from 'react';
 import { Button } from '@/components/ui/button';
-import type { Locale } from '@/lib/i18n/config';
-import { getMessages } from '@/lib/i18n/getMessages';
-import { dashboardPath, newEntryPath } from '@/lib/i18n/pathname';
+import { messages } from '@/lib/messages';
+import { dashboardPath, newEntryPath } from '@/lib/pathname';
 
 export default async function DashboardLayout({
   children,
-  params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ locale: string }>;
 }) {
-  const { locale: localeParam } = await params;
-  const locale = localeParam as Locale;
-  const messages = getMessages(locale);
-
   return (
     <div className="min-h-screen bg-surface2 flex flex-col">
       <header className="bg-surface border-b border-border sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4 md:px-6">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <Link href={dashboardPath(locale)} className="flex items-center gap-2 font-bold text-primary text-lg active:scale-[0.99] transition-transform">
+              <Link href={dashboardPath()} className="flex items-center gap-2 font-bold text-primary text-lg active:scale-[0.99] transition-transform">
                 <BookOpen className="h-5 w-5" />
                 <span className="tracking-tight">Limen</span>
               </Link>
@@ -42,14 +34,13 @@ export default async function DashboardLayout({
             </div>
 
             <div className="flex items-center gap-2">
-              <LocaleSwitcher locale={locale} />
               <Button asChild size="sm" className="h-10 rounded-full px-4">
-                <Link href={newEntryPath(locale)}>
+                <Link href={newEntryPath()}>
                   <PlusCircle className="h-4 w-4" />
                   <span>{messages.common.new}</span>
                 </Link>
               </Button>
-              <form action={logout.bind(null, locale)}>
+              <form action={logout}>
                 <Button
                   variant="ghost"
                   size="sm"

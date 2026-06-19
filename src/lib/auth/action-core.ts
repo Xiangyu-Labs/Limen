@@ -1,6 +1,5 @@
 import { encrypt as encryptSession } from '@/lib/auth/session';
-import { dashboardPath, loginPath } from '@/lib/i18n/pathname';
-import type { Locale } from '@/lib/i18n/config';
+import { dashboardPath, loginPath } from '@/lib/pathname';
 
 type AuthActionDeps = {
   authPassword?: string;
@@ -18,7 +17,7 @@ export function createAuthActions({
   redirect,
 }: AuthActionDeps) {
   return {
-    async login(locale: Locale, formData: FormData) {
+    async login(formData: FormData) {
       const password = formData.get('password');
 
       if (password === authPassword) {
@@ -26,15 +25,15 @@ export function createAuthActions({
         const session = await encrypt({ expires });
 
         (await cookies()).set('session', session, { expires, httpOnly: true });
-        redirect(dashboardPath(locale));
+        redirect(dashboardPath());
       } else {
         return { error: 'Invalid password' };
       }
     },
 
-    async logout(locale: Locale) {
+    async logout() {
       (await cookies()).set('session', '', { expires: new Date(0) });
-      redirect(loginPath(locale));
+      redirect(loginPath());
     },
   };
 }
