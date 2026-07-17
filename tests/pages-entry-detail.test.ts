@@ -21,7 +21,7 @@ test("entry detail view model exposes summary and tags without success status", 
   assert.equal(model.statusTone, "muted");
 });
 
-test("entry detail view model hides incomplete AI status", async () => {
+test("entry detail view model exposes incomplete AI status", async () => {
   const { buildEntryDetailViewModel } = await import("@/app/(dashboard)/entries/[id]/page");
   const model = buildEntryDetailViewModel({
     content: "Plain content",
@@ -35,7 +35,7 @@ test("entry detail view model hides incomplete AI status", async () => {
   assert.equal(model.displayTitle, "未命名记录");
   assert.equal(model.summary, null);
   assert.deepEqual(model.tags, []);
-  assert.equal(model.statusLabel, null);
+  assert.equal(model.statusLabel, "处理中");
   assert.equal(model.statusTone, "muted");
 });
 

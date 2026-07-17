@@ -15,14 +15,13 @@
     "test": "npm run test:node",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "db:push": "drizzle-kit push",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "tsx scripts/migrate.ts",
     "db:generate": "drizzle-kit generate",
-    "db:studio": "drizzle-kit studio",
-    "db:import-sqlite": "tsx scripts/import-sqlite-to-neon.ts"
+    "auth:hash-password": "tsx scripts/hash-password.ts",
+    "auth:generate-api-token": "tsx scripts/generate-api-token.ts"
   },
   "engines": {
-    "node": ">=22 <26"
+    "node": "24.x"
   },
   "repository": {
     "type": "git",
@@ -37,18 +36,20 @@
   "homepage": "https://github.com/xiangyumou/Limen#readme",
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
+    "@radix-ui/react-alert-dialog": "^1.1.19",
     "@radix-ui/react-slot": "^1.2.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
     "jose": "^6.2.2",
     "lucide-react": "^1.7.0",
-    "nanoid": "^5.1.7",
+    "nanoid": "^6.0.0",
     "next": "^16.2.10",
     "openai": "^6.33.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-markdown": "^10.1.0",
+    "sonner": "^2.0.7",
     "swr": "^2.4.2",
     "tailwind-merge": "^3.5.0",
     "zod": "^4.4.3"
@@ -56,17 +57,29 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.4",
     "@tailwindcss/postcss": "^4.2.2",
-    "@types/better-sqlite3": "^7.6.13",
-    "@types/node": "^25.5.0",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/jsdom": "^28.0.3",
+    "@types/node": "^24.13.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "better-sqlite3": "^12.11.1",
     "drizzle-kit": "^0.31.10",
-    "eslint": "^9.39.4",
+    "eslint": "^9.39.5",
     "eslint-config-next": "^16.2.2",
-    "postcss": "^8.5.8",
+    "jsdom": "^29.1.1",
+    "postcss": "8.5.19",
     "tailwindcss": "^4.2.2",
     "tsx": "^4.21.0",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.3"
+  },
+  "overrides": {
+    "postcss": "$postcss",
+    "esbuild": "0.28.1"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "sharp@0.34.5": true,
+    "fsevents@2.3.3": true,
+    "unrs-resolver@1.12.2": true
   }
 }

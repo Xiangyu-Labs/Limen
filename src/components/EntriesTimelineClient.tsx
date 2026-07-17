@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useTransition } from 'react';
 import useSWRInfinite from 'swr/infinite';
 import { Calendar, Loader2, Sparkles } from 'lucide-react';
 import { bulkRegenerateEntryMetadata } from '@/lib/actions/entries';
+import { toast } from 'sonner';
 import type { TimelineEntriesPage } from '@/lib/dashboard-data';
 import { messages } from '@/lib/messages';
 import { entryDetailPath } from '@/lib/pathname';
@@ -69,6 +70,7 @@ export function EntriesTimelineClient({
   const failedIds = useMemo(() => (
     timelineEntries.filter((entry) => entry.statusTone === 'danger').map((entry) => entry.id)
   ), [timelineEntries]);
+  const failedIdSet = useMemo(() => new Set(failedIds), [failedIds]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -83,15 +85,28 @@ export function EntriesTimelineClient({
   function retryAllFailed() {
     if (failedIds.length === 0) return;
     startRetryTransition(async () => {
-      await bulkRegenerateEntryMetadata(failedIds);
-      await mutate((pages) => pages?.map((page) => ({
-        ...page,
-        items: page.items.map((entry) => (
-          failedIds.includes(entry.id)
-            ? { ...entry, statusLabel: null, statusTone: 'muted' as const }
-            : entry
-        )),
-      })), { revalidate: false });
+      const previousData = data;
+      try {
+        await mutate((pages) => pages?.map((page) => ({
+          ...page,
+          items: page.items.map((entry) => (
+            failedIdSet.has(entry.id)
+              ? { ...entry, statusLabel: messages.common.processing, statusTone: 'muted' as const, isPending: true }
+              : entry
+          )),
+        })), { revalidate: false });
+        const result = await bulkRegenerateEntryMetadata(failedIds);
+        if (!result.ok) {
+          await mutate(previousData, { revalidate: false });
+          toast.error(result.error);
+          return;
+        }
+        toast.success(`已开始重新整理 ${result.data.ids.length} 条记录`);
+        await mutate();
+      } catch {
+        await mutate(previousData, { revalidate: false });
+        toast.error('重新整理失败，请重试');
+      }
     });
   }
 
@@ -131,8 +146,13 @@ export function EntriesTimelineClient({
               {entry.tags.length > 0 || entry.statusLabel ? (
                 <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-muted">
                   {entry.statusLabel ? (
-                    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-danger/20 px-2 py-1 text-danger">
-                      <span className="h-1.5 w-1.5 rounded-full bg-danger" />{entry.statusLabel}
+                    <span className={entry.isPending
+                      ? 'inline-flex shrink-0 items-center gap-1.5 rounded-md border border-primary/20 px-2 py-1 text-primary'
+                      : 'inline-flex shrink-0 items-center gap-1.5 rounded-md border border-danger/20 px-2 py-1 text-danger'}>
+                      {entry.isPending
+                        ? <Loader2 className="h-3 w-3 animate-spin" />
+                        : <span className="h-1.5 w-1.5 rounded-full bg-danger" />}
+                      {entry.statusLabel}
                     </span>
                   ) : null}
                   {entry.tags.map((tag) => <span key={tag} className="rounded-md bg-surface2 px-2 py-1">#{tag}</span>)}

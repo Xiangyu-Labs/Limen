@@ -2,7 +2,6 @@
 
 import { after } from 'next/server';
 import { nanoid } from 'nanoid';
-import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { processAIEntries, processAIEntry } from '@/lib/ai/processor';
@@ -17,16 +16,13 @@ const entryActions = createEntryActions({
   processAIEntries,
   authorize: requireSession,
   revalidatePath,
-  redirect,
 });
 
-export type EntryFormState = { error?: string } | undefined;
-
-export async function createEntry(_state: EntryFormState, formData: FormData) {
+export async function createEntry(formData: FormData) {
   return entryActions.createEntry(formData);
 }
 export const deleteEntry = entryActions.deleteEntry;
-export async function updateEntry(id: string, _state: EntryFormState, formData: FormData) {
+export async function updateEntry(id: string, formData: FormData) {
   return entryActions.updateEntry(id, formData);
 }
 export const regenerateEntryMetadata = entryActions.regenerateEntryMetadata;

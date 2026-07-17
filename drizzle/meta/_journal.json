@@ -8,6 +8,13 @@
       "when": 1784268832533,
       "tag": "0000_pale_bloodstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784272712617,
+      "tag": "0001_silly_the_enforcers",
+      "breakpoints": true
     }
   ]
 }

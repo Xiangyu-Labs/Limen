@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
       - run: npm run lint
@@ -21,6 +21,7 @@ jobs:
       - run: npm run build
         env:
           SESSION_SECRET: ci-session-secret-with-at-least-32-characters
-          AUTH_PASSWORD: ci-password
+          AUTH_PASSWORD_HASH: ci-placeholder-not-used-during-build
+          API_TOKEN_HASH: ci-placeholder-not-used-during-build
           DATABASE_URL: postgresql://test:test@localhost:5432/limen_ci
-      - run: npm audit --audit-level=high
+      - run: npm audit --audit-level=moderate

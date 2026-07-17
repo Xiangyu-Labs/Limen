@@ -8,7 +8,7 @@ test("dashboard page model exposes an empty page", async () => {
   assert.deepEqual(model.items, []);
 });
 
-test("dashboard view model hides pending AI status", async () => {
+test("dashboard view model exposes pending AI status", async () => {
   const { buildTimelineEntriesPage } = await import("@/lib/dashboard-data");
   const model = buildTimelineEntriesPage({ items: [
     {
@@ -21,7 +21,7 @@ test("dashboard view model hides pending AI status", async () => {
     },
   ], pageInfo: { hasMore: false, nextCursor: null, limit: 20 } });
 
-  assert.equal(model.items[0].statusLabel, null);
+  assert.equal(model.items[0].statusLabel, "处理中");
   assert.equal(model.items[0].statusTone, "muted");
   assert.equal(model.items[0].isPending, true);
   assert.equal(model.items[0].displayTitle, "未命名记录");

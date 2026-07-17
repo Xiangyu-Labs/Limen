@@ -1,7 +1,7 @@
 import Link from 'next/link';
-import { PlusCircle, LogOut } from 'lucide-react';
-import { logout } from '@/lib/auth/actions';
+import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { LogoutButton } from '@/components/LogoutButton';
 import { messages } from '@/lib/messages';
 import { dashboardPath, newEntryPath } from '@/lib/pathname';
 import { getSession } from '@/lib/auth/session';
@@ -44,17 +44,7 @@ export default async function DashboardLayout({
                   <span>{messages.common.new}</span>
                 </Link>
               </Button>
-              <form action={logout}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  type="submit"
-                  className="h-10 w-10 p-0 text-muted hover:text-danger"
-                  title={messages.common.logout}
-                >
-                  <LogOut className="h-5 w-5" />
-                </Button>
-              </form>
+              <LogoutButton />
             </div>
           </div>
         </div>

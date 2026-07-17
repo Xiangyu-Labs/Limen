@@ -50,7 +50,9 @@ export function buildTimelineEntriesPage(page: DashboardEntriesPage): TimelineEn
       displayTitle: entry.title || messages.dashboard.untitledEntry,
       displaySummary: entry.preview,
       tags: parseStoredTags(entry.tags),
-      statusLabel: entry.aiStatus === 'failed' ? messages.common.failed : null,
+      statusLabel: entry.aiStatus === 'failed'
+        ? messages.common.failed
+        : entry.aiStatus === 'pending' ? messages.common.processing : null,
       statusTone: entry.aiStatus === 'failed' ? 'danger' : 'muted',
       createdAt: entry.createdAt.toISOString(),
       isPending: entry.aiStatus === 'pending',

@@ -1,42 +1,54 @@
-import { encrypt as encryptSession } from '@/lib/auth/session';
-import { dashboardPath, loginPath } from '@/lib/pathname';
-import { secureStringEqual } from '@/lib/auth/security';
+import type { ActionResult } from '@/lib/actions/result';
+
+type LoginLimit = { blocked: boolean; retryAfterSeconds: number };
 
 type AuthActionDeps = {
-  authPassword?: string;
-  encrypt: typeof encryptSession;
-  cookies: () => Promise<{
-    set: (name: string, value: string, options: Record<string, unknown>) => unknown;
-  }>;
-  redirect: (location: string) => never;
-  cookieOptions?: (expires: Date) => Record<string, unknown>;
+  passwordHash?: string;
+  verifyPassword: (password: unknown, encodedHash: string | undefined) => Promise<boolean>;
+  getRateLimit: (key: string) => Promise<LoginLimit>;
+  recordFailure: (key: string) => Promise<LoginLimit & { failures: number }>;
+  clearFailures: (key: string) => Promise<void>;
+  createSession: () => Promise<string>;
+  setSessionCookie: (token: string) => Promise<void>;
+  clearSessionCookie: () => Promise<void>;
 };
 
+const INVALID_LOGIN_MESSAGE = '密码错误或请求过于频繁';
+
 export function createAuthActions({
-  authPassword = process.env.AUTH_PASSWORD,
-  encrypt,
-  cookies,
-  redirect,
-  cookieOptions = (expires) => ({ expires, httpOnly: true, sameSite: 'lax', path: '/' }),
+  passwordHash = process.env.AUTH_PASSWORD_HASH,
+  verifyPassword,
+  getRateLimit,
+  recordFailure,
+  clearFailures,
+  createSession,
+  setSessionCookie,
+  clearSessionCookie,
 }: AuthActionDeps) {
   return {
-    async login(formData: FormData) {
-      const password = formData.get('password');
-
-      if (secureStringEqual(password, authPassword)) {
-        const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-        const session = await encrypt({ expires });
-
-        (await cookies()).set('session', session, cookieOptions(expires));
-        redirect(dashboardPath());
-      } else {
-        return { error: 'Invalid password' };
+    async login(formData: FormData, clientKey: string): Promise<ActionResult> {
+      const limit = await getRateLimit(clientKey);
+      if (limit.blocked) {
+        return { ok: false, error: INVALID_LOGIN_MESSAGE, retryAfterSeconds: limit.retryAfterSeconds };
       }
+
+      if (!await verifyPassword(formData.get('password'), passwordHash)) {
+        const failed = await recordFailure(clientKey);
+        return {
+          ok: false,
+          error: INVALID_LOGIN_MESSAGE,
+          retryAfterSeconds: failed.blocked ? failed.retryAfterSeconds : undefined,
+        };
+      }
+
+      await clearFailures(clientKey);
+      await setSessionCookie(await createSession());
+      return { ok: true, data: undefined };
     },
 
-    async logout() {
-      (await cookies()).set('session', '', cookieOptions(new Date(0)));
-      redirect(loginPath());
+    async logout(): Promise<ActionResult> {
+      await clearSessionCookie();
+      return { ok: true, data: undefined };
     },
   };
 }

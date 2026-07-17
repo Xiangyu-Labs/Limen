@@ -1,97 +1,40 @@
-import test from "node:test";
-import assert from "node:assert/strict";
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { hashApiToken } from '@/lib/auth/security';
+import { evaluateProxyRequest, shouldBypassProxy } from '@/proxy';
 
-test("middleware redirects unauthenticated dashboard requests to login", async () => {
-  const { evaluateProxyRequest: evaluateMiddlewareRequest } = await import("@/proxy");
+const API_HASH = hashApiToken('api-secret');
 
-  const result = await evaluateMiddlewareRequest({
-    pathname: "/entries/new",
-    hasSession: false,
-    authHeader: null,
-    authPassword: "secret",
-  });
+function decide(pathname: string, overrides: Partial<Parameters<typeof evaluateProxyRequest>[0]> = {}) {
+  return evaluateProxyRequest({ pathname, hasSession: false, authHeader: null, apiTokenHash: API_HASH, ...overrides });
+}
 
-  assert.deepEqual(result, { type: "redirect", location: "/login" });
+test('proxy redirects every unauthenticated private page including unknown paths', () => {
+  assert.deepEqual(decide('/entries/new'), { type: 'redirect', location: '/login' });
+  assert.deepEqual(decide('/future-private-page'), { type: 'redirect', location: '/login' });
+  assert.deepEqual(decide('/private.json'), { type: 'redirect', location: '/login' });
 });
 
-test("middleware redirects authenticated login requests to dashboard", async () => {
-  const { evaluateProxyRequest: evaluateMiddlewareRequest } = await import("@/proxy");
-
-  const result = await evaluateMiddlewareRequest({
-    pathname: "/login",
-    hasSession: true,
-    authHeader: null,
-    authPassword: "secret",
-  });
-
-  assert.deepEqual(result, { type: "redirect", location: "/" });
+test('proxy only exposes login and explicit framework assets', () => {
+  assert.deepEqual(decide('/login'), { type: 'next' });
+  assert.equal(shouldBypassProxy('/favicon.ico'), true);
+  assert.equal(shouldBypassProxy('/robots.txt'), true);
+  assert.equal(shouldBypassProxy('/_next/static/chunk.js'), true);
+  assert.equal(shouldBypassProxy('/images/logo.png'), false);
 });
 
-test("middleware allows authenticated dashboard requests", async () => {
-  const { evaluateProxyRequest: evaluateMiddlewareRequest } = await import("@/proxy");
-
-  const result = await evaluateMiddlewareRequest({
-    pathname: "/",
-    hasSession: true,
-    authHeader: null,
-    authPassword: "secret",
-  });
-
-  assert.deepEqual(result, { type: "next" });
+test('proxy allows authenticated pages and redirects authenticated login', () => {
+  assert.deepEqual(decide('/', { hasSession: true }), { type: 'next' });
+  assert.deepEqual(decide('/login', { hasSession: true }), { type: 'redirect', location: '/' });
 });
 
-test("middleware redirects legacy locale paths to Chinese-only root routes", async () => {
-  const { evaluateProxyRequest: evaluateMiddlewareRequest } = await import("@/proxy");
-
-  const result = await evaluateMiddlewareRequest({
-    pathname: "/zh/entries/1",
-    hasSession: true,
-    authHeader: null,
-    authPassword: "secret",
-  });
-
-  assert.deepEqual(result, { type: "redirect", location: "/entries/1" });
+test('dashboard API requires a browser session', () => {
+  assert.deepEqual(decide('/api/dashboard/entries'), { type: 'json', status: 401, body: { error: 'Unauthorized' } });
+  assert.deepEqual(decide('/api/dashboard/entries', { hasSession: true }), { type: 'next' });
 });
 
-test("middleware rejects unauthenticated api requests", async () => {
-  const { evaluateProxyRequest: evaluateMiddlewareRequest } = await import("@/proxy");
-
-  const result = await evaluateMiddlewareRequest({
-    pathname: "/api/entries",
-    hasSession: false,
-    authHeader: null,
-    authPassword: "secret",
-  });
-
-  assert.deepEqual(result, { type: "json", status: 401, body: { error: "Unauthorized" } });
-});
-
-test("middleware allows authenticated api requests", async () => {
-  const { evaluateProxyRequest: evaluateMiddlewareRequest } = await import("@/proxy");
-
-  const result = await evaluateMiddlewareRequest({
-    pathname: "/api/entries",
-    hasSession: false,
-    authHeader: "Bearer secret",
-    authPassword: "secret",
-  });
-
-  assert.deepEqual(result, { type: "next" });
-});
-
-test("middleware rejects api requests when auth is not configured", async () => {
-  const { evaluateProxyRequest: evaluateMiddlewareRequest } = await import("@/proxy");
-  assert.deepEqual(await evaluateMiddlewareRequest({ pathname: "/api/entries", hasSession: false, authHeader: "Bearer undefined", authPassword: undefined }), { type: "json", status: 401, body: { error: "Unauthorized" } });
-});
-
-test("middleware skip list covers favicon and static assets", async () => {
-  const { shouldBypassProxy: shouldBypassLocaleMiddleware } = await import("@/proxy");
-
-  assert.equal(shouldBypassLocaleMiddleware("/favicon.ico"), true);
-  assert.equal(shouldBypassLocaleMiddleware("/robots.txt"), true);
-  assert.equal(shouldBypassLocaleMiddleware("/sitemap.xml"), true);
-  assert.equal(shouldBypassLocaleMiddleware("/manifest.webmanifest"), true);
-  assert.equal(shouldBypassLocaleMiddleware("/images/logo.png"), true);
-  assert.equal(shouldBypassLocaleMiddleware("/_next/static/chunks/app.js"), true);
-  assert.equal(shouldBypassLocaleMiddleware("/entries"), false);
+test('external API requires the independently hashed Bearer token', () => {
+  assert.deepEqual(decide('/api/entries'), { type: 'json', status: 401, body: { error: 'Unauthorized' } });
+  assert.deepEqual(decide('/api/entries', { authHeader: 'Bearer api-secret' }), { type: 'next' });
+  assert.deepEqual(decide('/api/entries', { authHeader: 'Bearer wrong' }), { type: 'json', status: 401, body: { error: 'Unauthorized' } });
 });
