@@ -16,6 +16,8 @@ test('password hashes verify without storing plaintext', async () => {
   assert.equal(await verifyPassword('wrong-password-value', encoded), false);
   assert.equal(await verifyPassword(password, 'malformed'), false);
   assert.equal(await verifyPassword('short', encoded), false);
+  assert.equal(await verifyPassword('x'.repeat(14), await hashPassword('x'.repeat(14), Buffer.alloc(16, 8))), true);
+  await assert.rejects(() => hashPassword('x'.repeat(13), Buffer.alloc(16, 8)), /14-128/);
   assert.equal(await verifyPassword('x'.repeat(129), encoded), false);
 });
 

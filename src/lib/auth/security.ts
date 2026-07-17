@@ -5,7 +5,7 @@ const SCRYPT_R = 8;
 const SCRYPT_P = 1;
 const SCRYPT_KEY_LENGTH = 64;
 const SCRYPT_MAX_MEMORY = 64 * 1024 * 1024;
-const MIN_PASSWORD_LENGTH = 16;
+const MIN_PASSWORD_LENGTH = 14;
 const MAX_PASSWORD_LENGTH = 128;
 
 function constantTimeBufferEqual(left: Buffer, right: Buffer) {

@@ -44,7 +44,7 @@ AI_MODEL=gpt-4o-mini
 DATABASE_URL=postgresql://user:password@ep-example.ap-southeast-1.aws.neon.tech/limen?sslmode=require
 ```
 
-浏览器密码必须至少 16 字符，只保存 scrypt 哈希。API 使用独立的 256-bit Token；生成命令会显示一次原始 Token，应存入密码管理器和 API 客户端，服务端只保存哈希。
+浏览器密码必须至少 14 字符，只保存 scrypt 哈希。API 使用独立的 256-bit Token；生成命令会显示一次原始 Token，应存入密码管理器和 API 客户端，服务端只保存哈希。
 
 推荐在 Neon 创建新加坡区域的项目，并通过 Vercel Marketplace 连接项目。数据库迁移使用 Neon HTTP，不会在构建或函数冷启动时自动执行：
 
