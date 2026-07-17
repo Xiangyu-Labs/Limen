@@ -37,7 +37,7 @@ export function evaluateMiddlewareRequest({
   }
 
   if (pathname.startsWith('/api')) {
-    if (!authHeader || authHeader !== `Bearer ${authPassword}`) {
+    if (!authPassword || !authHeader || authHeader !== `Bearer ${authPassword}`) {
       return { type: 'json', status: 401, body: { error: 'Unauthorized' } };
     }
 

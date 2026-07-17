@@ -68,10 +68,12 @@ docker compose up -d --build
 
 所有 API 均需在 Header 中包含 `Authorization: Bearer <AUTH_PASSWORD>`。
 
-- `POST /api/entries`: 创建新条目 (body: `{ "content": "..." }`)
+- `POST /api/entries`: 创建新条目 (body: `{ "content": "..." }`)，成功返回 `201` 和 `{ "id": "...", "status": "created", "aiStatus": "pending" }`
 - `GET /api/entries`: 获取条目列表 (query: `limit`, `offset`)
 - `GET /api/entries/[id]`: 获取条目详情
 - `DELETE /api/entries/[id]`: 删除条目
+
+快捷指令应使用 `POST`、`Content-Type: application/json` 和 `Authorization: Bearer <AUTH_PASSWORD>`。只在响应 JSON 的 `status` 等于 `created` 且 `id` 非空时提示成功；不要用“URL 的内容有任何值”判断成功，因为错误响应也有 JSON 内容。成功后可用返回的 `id` 请求 `GET /api/entries/{id}` 验证条目已落库。
 
 ## 特性
 

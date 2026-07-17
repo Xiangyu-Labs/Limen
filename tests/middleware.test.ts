@@ -79,6 +79,11 @@ test("middleware allows authenticated api requests", async () => {
   assert.deepEqual(result, { type: "next" });
 });
 
+test("middleware rejects api requests when auth is not configured", async () => {
+  const { evaluateMiddlewareRequest } = await import("@/middleware");
+  assert.deepEqual(await evaluateMiddlewareRequest({ pathname: "/api/entries", hasSession: false, authHeader: "Bearer undefined", authPassword: undefined }), { type: "json", status: 401, body: { error: "Unauthorized" } });
+});
+
 test("middleware skip list covers favicon and static assets", async () => {
   const { shouldBypassLocaleMiddleware } = await import("@/middleware");
 

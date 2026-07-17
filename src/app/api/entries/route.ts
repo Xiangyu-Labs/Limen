@@ -22,15 +22,24 @@ export function createEntriesRouteHandlers({
 }: RouteDeps) {
   return {
     async POST(request: Request) {
+      let id: string | null = null;
       try {
-        const body = await request.json();
-        const { content, createdAt } = body;
+        let body: unknown;
+        try {
+          body = await request.json();
+        } catch {
+          return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+        }
+        if (!body || typeof body !== 'object') {
+          return NextResponse.json({ error: 'Request body must be a JSON object' }, { status: 400 });
+        }
+        const { content, createdAt } = body as { content?: unknown; createdAt?: string | null };
 
-        if (!content || typeof content !== 'string') {
+        if (typeof content !== 'string' || content.trim().length === 0) {
           return NextResponse.json({ error: 'Content is required' }, { status: 400 });
         }
 
-        const id = createId();
+        id = createId();
         await db.insert(entries).values({
           id,
           content,
@@ -39,14 +48,19 @@ export function createEntriesRouteHandlers({
           createdAt: parseEntryDateInput(createdAt),
         });
 
-        await schedule(async () => {
-          console.log(`Triggering AI processing for entry: ${id}`);
-          await processAIEntry(id, content);
-        });
+        try {
+          await schedule(async () => {
+            console.log(`Triggering AI processing for entry: ${id}`);
+            await processAIEntry(id as string, content);
+          });
+        } catch (error) {
+          console.error(`AI scheduling failed for entry ${id}:`, error);
+        }
 
-        return NextResponse.json({ id }, { status: 201 });
+        console.info(`Created entry ${id}`);
+        return NextResponse.json({ id, status: 'created', aiStatus: 'pending' }, { status: 201 });
       } catch (error) {
-        console.error('Error creating entry:', error);
+        console.error(`Error creating entry${id ? ` ${id}` : ''}:`, error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
       }
     },
