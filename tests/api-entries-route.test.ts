@@ -12,6 +12,7 @@ test("POST rejects requests without string content", async () => {
       createId: () => "api-entry",
       processAIEntry: async () => {},
       schedule: async (fn) => fn(),
+      authorizeRequest: () => true,
     });
 
     const response = await handlers.POST(
@@ -23,6 +24,47 @@ test("POST rejects requests without string content", async () => {
     );
 
     assert.equal(response.status, 400);
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+test("route handlers authenticate requests internally", async () => {
+  const fixture = createTestDb();
+  try {
+    const { createEntriesRouteHandlers } = await import("@/app/api/entries/route");
+    const handlers = createEntriesRouteHandlers({
+      db: fixture.db,
+      createId: () => "unused",
+      processAIEntry: async () => {},
+      schedule: async () => {},
+      authorizeRequest: () => false,
+    });
+    const response = await handlers.GET(new Request("http://localhost/api/entries"));
+    assert.equal(response.status, 401);
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+test("POST rejects content over the configured limit", async () => {
+  const fixture = createTestDb();
+  try {
+    const { createEntriesRouteHandlers } = await import("@/app/api/entries/route");
+    const { ENTRY_CONTENT_MAX_LENGTH } = await import("@/lib/validation");
+    const handlers = createEntriesRouteHandlers({
+      db: fixture.db,
+      createId: () => "unused",
+      processAIEntry: async () => {},
+      schedule: async () => {},
+      authorizeRequest: () => true,
+    });
+    const response = await handlers.POST(new Request("http://localhost/api/entries", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ content: "x".repeat(ENTRY_CONTENT_MAX_LENGTH + 1) }),
+    }));
+    assert.equal(response.status, 413);
   } finally {
     fixture.cleanup();
   }
@@ -41,6 +83,7 @@ test("POST inserts an entry and schedules AI processing", async () => {
         processed = { id, content };
       },
       schedule: async (fn) => fn(),
+      authorizeRequest: () => true,
     });
 
     const response = await handlers.POST(
@@ -71,7 +114,7 @@ test("POST rejects invalid JSON and blank content", async () => {
   const fixture = createTestDb();
   try {
     const { createEntriesRouteHandlers } = await import("@/app/api/entries/route");
-    const handlers = createEntriesRouteHandlers({ db: fixture.db, createId: () => "unused", processAIEntry: async () => {}, schedule: async (fn) => fn() });
+    const handlers = createEntriesRouteHandlers({ db: fixture.db, createId: () => "unused", processAIEntry: async () => {}, schedule: async (fn) => fn(), authorizeRequest: () => true });
     const invalidJson = await handlers.POST(new Request("http://localhost/api/entries", { method: "POST", body: "not-json", headers: { "content-type": "application/json" } }));
     assert.equal(invalidJson.status, 400);
     const blank = await handlers.POST(new Request("http://localhost/api/entries", { method: "POST", body: JSON.stringify({ content: "   " }), headers: { "content-type": "application/json" } }));
@@ -83,7 +126,7 @@ test("POST keeps the entry when AI scheduling fails", async () => {
   const fixture = createTestDb();
   try {
     const { createEntriesRouteHandlers } = await import("@/app/api/entries/route");
-    const handlers = createEntriesRouteHandlers({ db: fixture.db, createId: () => "scheduled-entry", processAIEntry: async () => {}, schedule: async () => { throw new Error("scheduler unavailable"); } });
+    const handlers = createEntriesRouteHandlers({ db: fixture.db, createId: () => "scheduled-entry", processAIEntry: async () => {}, schedule: async () => { throw new Error("scheduler unavailable"); }, authorizeRequest: () => true });
     const response = await handlers.POST(new Request("http://localhost/api/entries", { method: "POST", body: JSON.stringify({ content: "Saved before scheduler failure" }), headers: { "content-type": "application/json" } }));
     assert.equal(response.status, 201);
     const row = await fixture.db.query.entries.findFirst({ where: (fields, { eq }) => eq(fields.id, "scheduled-entry") });
@@ -113,16 +156,18 @@ test("GET returns newest entries first", async () => {
       createId: () => "unused",
       processAIEntry: async () => {},
       schedule: async (fn) => fn(),
+      authorizeRequest: () => true,
     });
 
     const response = await handlers.GET(
-      new Request("http://localhost/api/entries?limit=10&offset=0"),
+      new Request("http://localhost/api/entries?limit=10"),
     );
 
     assert.equal(response.status, 200);
     const body = await response.json();
-    assert.equal(body[0].id, "newer");
-    assert.equal(body[1].id, "older");
+    assert.equal(body.items[0].id, "newer");
+    assert.equal(body.items[1].id, "older");
+    assert.deepEqual(body.pageInfo, { hasMore: false, limit: 10, nextCursor: null });
   } finally {
     fixture.cleanup();
   }

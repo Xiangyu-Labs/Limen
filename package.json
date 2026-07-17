@@ -14,9 +14,14 @@
     "test:node": "node --import tsx --test",
     "test": "npm run test:node",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "db:push": "drizzle-kit push",
-    "db:migrate": "tsx src/lib/db/apply-migrations.ts",
+    "db:migrate": "drizzle-kit migrate",
+    "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio"
+  },
+  "engines": {
+    "node": ">=22 <26"
   },
   "repository": {
     "type": "git",
@@ -34,17 +39,18 @@
     "better-sqlite3": "^12.8.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.2",
     "jose": "^6.2.2",
     "lucide-react": "^1.7.0",
     "nanoid": "^5.1.7",
-    "next": "^16.2.2",
+    "next": "^16.2.10",
     "openai": "^6.33.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-markdown": "^10.1.0",
-    "tailwind-merge": "^3.5.0"
+    "swr": "^2.4.2",
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.2",

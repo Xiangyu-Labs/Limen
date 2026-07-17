@@ -7,7 +7,8 @@ import { seedEntry } from "./helpers/test-entries";
 
 test("processAIEntry marks an entry done with structured metadata on success", async () => {
   const fixture = createTestDb();
-  let capturedRequest: any = null;
+  type AIRequest = { messages: Array<{ content: string }> };
+  let capturedRequest: AIRequest | null = null;
   try {
     await seedEntry(fixture.db, {
       id: "entry-success",
@@ -22,7 +23,7 @@ test("processAIEntry marks an entry done with structured metadata on success", a
       client: {
         chat: {
           completions: {
-            create: async (input: any) => {
+            create: async (input) => {
               capturedRequest = input;
               return ({
               choices: [
@@ -52,9 +53,11 @@ test("processAIEntry marks an entry done with structured metadata on success", a
     assert.equal(row?.title, "我今天重新把测试补好了");
     assert.equal(row?.summary, "我把测试重新补齐了，心里踏实了很多。");
     assert.equal(row?.tags, JSON.stringify(["testing", "journal"]));
-    assert.match(capturedRequest.messages[0].content, /第一人称|“我”的视角|现有标签/);
-    assert.match(capturedRequest.messages[0].content, /最多 10 个/);
-    assert.match(capturedRequest.messages[0].content, /journal, testing/);
+    const request = capturedRequest as AIRequest | null;
+    assert.ok(request);
+    assert.match(request.messages[0].content, /第一人称|“我”的视角|现有标签/);
+    assert.match(request.messages[0].content, /最多 10 个/);
+    assert.match(request.messages[0].content, /journal, testing/);
   } finally {
     fixture.cleanup();
   }
@@ -92,6 +95,40 @@ test("processAIEntry marks an entry failed when AI returns invalid JSON", async 
     assert.equal(row?.aiStatus, "failed");
     assert.equal(row?.title, null);
     assert.equal(row?.summary, null);
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+test("long entries are processed in bounded chunks and summarized", async () => {
+  const fixture = createTestDb();
+  let active = 0;
+  let maxActive = 0;
+  let calls = 0;
+  try {
+    await seedEntry(fixture.db, { id: "entry-long", content: "x".repeat(60_001), aiStatus: "pending" });
+    const { createAIProcessor } = await import("@/lib/ai/processor");
+    const processor = createAIProcessor({
+      db: fixture.db,
+      client: {
+        chat: {
+          completions: {
+            create: async () => {
+              calls += 1;
+              active += 1;
+              maxActive = Math.max(maxActive, active);
+              await new Promise<void>((resolve) => setImmediate(resolve));
+              active -= 1;
+              return { choices: [{ message: { content: JSON.stringify({ title: "长文", summary: "长文摘要", tags: ["记录"] }) } }] };
+            },
+          },
+        },
+      },
+    });
+    await processor("entry-long", "x".repeat(60_001));
+    assert.equal(calls, 4);
+    assert.ok(maxActive <= 3);
+    assert.equal((await fixture.db.query.entries.findFirst({ where: eq(entries.id, "entry-long") }))?.aiStatus, "done");
   } finally {
     fixture.cleanup();
   }

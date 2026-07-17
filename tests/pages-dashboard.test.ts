@@ -1,73 +1,66 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import { messages } from "@/lib/messages";
 
-test("dashboard view model exposes empty state copy", async () => {
-  const { buildDashboardViewModel } = await import("@/app/(dashboard)/page");
-  const model = buildDashboardViewModel([], messages, undefined);
-
-  assert.equal(model.heading, "时间线");
-  assert.equal(model.emptyMessage, "还没有记录");
+test("dashboard page model exposes an empty page", async () => {
+  const { buildTimelineEntriesPage } = await import("@/lib/dashboard-data");
+  const model = buildTimelineEntriesPage({ items: [], pageInfo: { hasMore: false, nextCursor: null, limit: 20 } });
+  assert.deepEqual(model.items, []);
 });
 
 test("dashboard view model hides pending AI status", async () => {
-  const { buildDashboardViewModel } = await import("@/app/(dashboard)/page");
-  const model = buildDashboardViewModel([
+  const { buildTimelineEntriesPage } = await import("@/lib/dashboard-data");
+  const model = buildTimelineEntriesPage({ items: [
     {
       id: "1",
-      content: "Raw content",
+      preview: "Raw content",
       title: null,
-      summary: null,
       tags: null,
       aiStatus: "pending",
       createdAt: new Date(),
-    } as never,
-  ], messages, undefined);
+    },
+  ], pageInfo: { hasMore: false, nextCursor: null, limit: 20 } });
 
-  assert.equal(model.entries[0].statusLabel, null);
-  assert.equal(model.entries[0].statusTone, "muted");
-  assert.equal(model.entries[0].displayTitle, "未命名记录");
+  assert.equal(model.items[0].statusLabel, null);
+  assert.equal(model.items[0].statusTone, "muted");
+  assert.equal(model.items[0].displayTitle, "未命名记录");
 });
 
 test("dashboard view model prefers AI-enhanced title, summary, and tags without success status", async () => {
-  const { buildDashboardViewModel } = await import("@/app/(dashboard)/page");
-  const model = buildDashboardViewModel([
+  const { buildTimelineEntriesPage } = await import("@/lib/dashboard-data");
+  const model = buildTimelineEntriesPage({ items: [
     {
       id: "1",
-      content: "Raw content",
+      preview: "Enhanced summary",
       title: "Enhanced title",
-      summary: "Enhanced summary",
       tags: JSON.stringify(["one", "two"]),
       aiStatus: "done",
       createdAt: new Date(),
-    } as never,
-  ], messages, "focus");
+    },
+  ], pageInfo: { hasMore: false, nextCursor: null, limit: 20 } });
 
-  assert.equal(model.heading, "“focus”的搜索结果");
-  assert.equal(model.entries[0].displayTitle, "Enhanced title");
-  assert.equal(model.entries[0].displaySummary, "Enhanced summary");
-  assert.equal(model.entries[0].statusLabel, null);
-  assert.equal(model.entries[0].statusTone, "muted");
-  assert.deepEqual(model.entries[0].tags, ["one", "two"]);
+  assert.equal(model.items[0].displayTitle, "Enhanced title");
+  assert.equal(model.items[0].displaySummary, "Enhanced summary");
+  assert.equal(model.items[0].statusLabel, null);
+  assert.equal(model.items[0].statusTone, "muted");
+  assert.deepEqual(model.items[0].tags, ["one", "two"]);
 });
 
 test("dashboard view model marks failed AI entries clearly", async () => {
-  const { buildDashboardViewModel } = await import("@/app/(dashboard)/page");
-  const model = buildDashboardViewModel([
+  const { buildTimelineEntriesPage } = await import("@/lib/dashboard-data");
+  const model = buildTimelineEntriesPage({ items: [
     {
       id: "1",
-      content: "Raw content",
+      preview: "Raw content",
       title: null,
-      summary: null,
       tags: null,
       aiStatus: "failed",
       createdAt: new Date(),
-    } as never,
-  ], messages, undefined);
+    },
+  ], pageInfo: { hasMore: false, nextCursor: null, limit: 20 } });
 
-  assert.equal(model.entries[0].statusLabel, "失败");
-  assert.equal(model.entries[0].statusTone, "danger");
+  assert.equal(model.items[0].statusLabel, "失败");
+  assert.equal(model.items[0].statusTone, "danger");
 });
 
 test("dashboard top navigation only keeps search controls", () => {

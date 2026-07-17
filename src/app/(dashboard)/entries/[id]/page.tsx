@@ -10,6 +10,7 @@ import { FormattedDate } from '@/components/FormattedDate';
 import { Button } from '@/components/ui/button';
 import { messages } from '@/lib/messages';
 import { dashboardPath, entryEditPath } from '@/lib/pathname';
+import { parseStoredTags } from '@/lib/tags';
 
 export function buildEntryDetailViewModel(
   entry: {
@@ -26,7 +27,7 @@ export function buildEntryDetailViewModel(
     ...entry,
     displayTitle: entry.title || copy.editor.untitledCapture,
     summary: entry.aiStatus === 'done' ? entry.summary : null,
-    tags: entry.tags ? (JSON.parse(entry.tags) as string[]) : [],
+    tags: parseStoredTags(entry.tags),
     statusLabel: entry.aiStatus === 'failed' ? copy.common.failed : null,
     statusTone: entry.aiStatus === 'failed' ? 'danger' : 'muted',
     regenerateLabel: copy.entryDetail.regenerateMetadata,
@@ -100,7 +101,7 @@ export default async function EntryDetailPage({
             <div className="flex flex-wrap items-center gap-3 text-sm text-muted">
               <div className="flex items-center gap-2">
                 <Calendar className="h-3.5 w-3.5" />
-                <FormattedDate date={entry.createdAt!} type="full" />
+                <FormattedDate date={entry.createdAt} />
               </div>
               {viewModel.statusLabel && (
                 <div className="flex items-center gap-2 rounded-md border border-danger/20 px-2 py-1 text-danger">

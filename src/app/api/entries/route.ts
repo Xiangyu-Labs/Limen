@@ -1,27 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { after } from 'next/server';
 import { db } from '@/lib/db';
 import { entries } from '@/lib/db/schema';
 import { processAIEntry } from '@/lib/ai/processor';
 import { nanoid } from 'nanoid';
-import { desc } from 'drizzle-orm';
-import { parseEntryDateInput } from '@/lib/entry-date';
+import { loadApiEntriesPage } from '@/lib/dashboard-data';
+import { hasValidBearerToken } from '@/lib/auth/security';
+import { InputValidationError, parseEntryInput } from '@/lib/validation';
+import { parsePageLimit } from '@/lib/pagination';
 
 type RouteDeps = {
   db: typeof db;
   createId: () => string;
   processAIEntry: typeof processAIEntry;
   schedule: (fn: () => Promise<void>) => void | Promise<void>;
+  authorizeRequest?: (request: Request) => boolean;
 };
 
+function validationResponse(error: InputValidationError) {
+  return NextResponse.json(
+    { error: error.message },
+    { status: error.code === 'too_large' ? 413 : 400 },
+  );
+}
+
 export function createEntriesRouteHandlers({
-  db,
+  db: database,
   createId,
   processAIEntry,
   schedule,
+  authorizeRequest = hasValidBearerToken,
 }: RouteDeps) {
   return {
     async POST(request: Request) {
+      if (!authorizeRequest(request)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
       let id: string | null = null;
       try {
         let body: unknown;
@@ -33,52 +47,43 @@ export function createEntriesRouteHandlers({
         if (!body || typeof body !== 'object') {
           return NextResponse.json({ error: 'Request body must be a JSON object' }, { status: 400 });
         }
-        const { content, createdAt } = body as { content?: unknown; createdAt?: string | null };
-
-        if (typeof content !== 'string' || content.trim().length === 0) {
-          return NextResponse.json({ error: 'Content is required' }, { status: 400 });
-        }
+        const { content, createdAt } = body as { content?: unknown; createdAt?: unknown };
+        const input = parseEntryInput(content, createdAt);
 
         id = createId();
-        await db.insert(entries).values({
+        await database.insert(entries).values({
           id,
-          content,
+          content: input.content,
           source: 'web',
           aiStatus: 'pending',
-          createdAt: parseEntryDateInput(createdAt),
+          createdAt: input.createdAt,
         });
 
         try {
-          await schedule(async () => {
-            console.log(`Triggering AI processing for entry: ${id}`);
-            await processAIEntry(id as string, content);
-          });
+          await schedule(async () => processAIEntry(id as string, input.content));
         } catch (error) {
           console.error(`AI scheduling failed for entry ${id}:`, error);
         }
-
-        console.info(`Created entry ${id}`);
         return NextResponse.json({ id, status: 'created', aiStatus: 'pending' }, { status: 201 });
       } catch (error) {
+        if (error instanceof InputValidationError) return validationResponse(error);
         console.error(`Error creating entry${id ? ` ${id}` : ''}:`, error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
       }
     },
 
     async GET(request: Request) {
-      const { searchParams } = new URL(request.url);
-      const limit = parseInt(searchParams.get('limit') || '10');
-      const offset = parseInt(searchParams.get('offset') || '0');
-
+      if (!authorizeRequest(request)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
       try {
-        const results = await db.query.entries.findMany({
-          limit,
-          offset,
-          orderBy: [desc(entries.createdAt)],
-        });
-
-        return NextResponse.json(results);
+        const params = new URL(request.url).searchParams;
+        const limit = parsePageLimit(params.get('limit'));
+        const cursor = params.get('cursor') ?? undefined;
+        const page = await loadApiEntriesPage({ limit, cursor }, database);
+        return NextResponse.json(page);
       } catch (error) {
+        if (error instanceof InputValidationError) return validationResponse(error);
         console.error('Error fetching entries:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
       }
@@ -93,10 +98,5 @@ const routeHandlers = createEntriesRouteHandlers({
   schedule: (fn) => after(fn),
 });
 
-export async function POST(request: NextRequest) {
-  return routeHandlers.POST(request);
-}
-
-export async function GET(request: NextRequest) {
-  return routeHandlers.GET(request);
-}
+export const POST = routeHandlers.POST;
+export const GET = routeHandlers.GET;

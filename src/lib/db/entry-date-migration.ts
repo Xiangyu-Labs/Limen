@@ -26,12 +26,18 @@ export function normalizeEntryCreatedAtDates(sqlite: Database.Database): Migrati
     return { changed: 0 };
   }
 
+  const nullResult = sqlite.prepare(`
+    UPDATE entries
+    SET created_at = COALESCE(updated_at, CAST(strftime('%s', 'now', 'start of day') AS INTEGER))
+    WHERE created_at IS NULL
+  `).run();
   const result = sqlite.prepare(`
     UPDATE entries
     SET created_at = CAST(strftime('%s', date(created_at, 'unixepoch')) AS INTEGER)
     WHERE created_at IS NOT NULL
       AND created_at != CAST(strftime('%s', date(created_at, 'unixepoch')) AS INTEGER)
   `).run();
+  sqlite.exec('CREATE INDEX IF NOT EXISTS entries_created_at_id_idx ON entries(created_at DESC, id DESC)');
 
-  return { changed: result.changes };
+  return { changed: nullResult.changes + result.changes };
 }

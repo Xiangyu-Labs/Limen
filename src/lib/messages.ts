@@ -17,6 +17,9 @@ export const messages = {
     createFirstEntry: '写一条',
     resultsFor: (query: string) => `“${query}”的搜索结果`,
     untitledEntry: '未命名记录',
+    loadMore: '加载更多',
+    endOfTimeline: '已经到底了',
+    loadFailed: '加载失败，请重试',
   },
   editor: {
     newCapture: '新建',

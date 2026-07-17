@@ -4,8 +4,8 @@ import { processAIEntry as runAI } from '@/lib/ai/processor';
 import { revalidatePath as nextRevalidatePath } from 'next/cache';
 import { redirect as nextRedirect } from 'next/navigation';
 import { eq, inArray } from 'drizzle-orm';
-import { dashboardPath, entryDetailPath, entryEditPath } from '@/lib/pathname';
-import { parseEntryDateInput } from '@/lib/entry-date';
+import { dashboardPath, entryDetailPath } from '@/lib/pathname';
+import { InputValidationError, normalizeEntryIds, parseEntryInput } from '@/lib/validation';
 
 type EntryActionDeps = {
   db: typeof appDb;
@@ -14,6 +14,8 @@ type EntryActionDeps = {
   processAIEntry: typeof runAI;
   revalidatePath: typeof nextRevalidatePath;
   redirect: typeof nextRedirect;
+  authorize?: () => unknown | Promise<unknown>;
+  processAIEntries?: (items: Array<{ id: string; content: string }>) => Promise<void>;
 };
 
 export function createEntryActions({
@@ -23,28 +25,32 @@ export function createEntryActions({
   processAIEntry,
   revalidatePath,
   redirect,
+  authorize = () => {},
+  processAIEntries,
 }: EntryActionDeps) {
   return {
     async createEntry(formData: FormData) {
-      const content = formData.get('content') as string;
-      const createdAtInput = formData.get('createdAt') as string | null;
-
-      if (!content || content.trim().length === 0) {
-        return { error: 'Content is required' };
+      await authorize();
+      let input;
+      try {
+        input = parseEntryInput(formData.get('content'), formData.get('createdAt'));
+      } catch (error) {
+        if (error instanceof InputValidationError) return { error: error.message };
+        throw error;
       }
 
       const id = createId();
       await db.insert(entries).values({
         id,
-        content,
+        content: input.content,
         source: 'web',
         aiStatus: 'pending',
-        createdAt: parseEntryDateInput(createdAtInput),
+        createdAt: input.createdAt,
         updatedAt: new Date(),
       });
 
       await scheduleAI(async () => {
-        await processAIEntry(id, content).catch(err => {
+        await processAIEntry(id, input.content).catch(err => {
           console.error(`AI background processing failed for entry ${id}:`, err);
         });
       });
@@ -54,32 +60,34 @@ export function createEntryActions({
     },
 
     async deleteEntry(id: string) {
+      await authorize();
       await db.delete(entries).where(eq(entries.id, id));
       revalidatePath(dashboardPath());
       redirect(dashboardPath());
     },
 
     async updateEntry(id: string, formData: FormData) {
-      const content = (formData.get('content') as string | null)?.trim() ?? '';
-      if (!content) {
-        redirect(entryEditPath(id));
+      await authorize();
+      let input;
+      try {
+        input = parseEntryInput(formData.get('content'), formData.get('createdAt'));
+      } catch (error) {
+        if (error instanceof InputValidationError) return { error: error.message };
+        throw error;
       }
-
-      const createdAtInput = formData.get('createdAt') as string | null;
-      const createdAt = parseEntryDateInput(createdAtInput);
 
       await db.update(entries).set({
         title: null,
         summary: null,
         tags: null,
-        content,
+        content: input.content,
         aiStatus: 'pending',
-        createdAt,
+        createdAt: input.createdAt,
         updatedAt: new Date(),
       }).where(eq(entries.id, id));
 
       await scheduleAI(async () => {
-        await processAIEntry(id, content).catch(err => {
+        await processAIEntry(id, input.content).catch(err => {
           console.error(`AI update processing failed for entry ${id}:`, err);
         });
       });
@@ -90,6 +98,7 @@ export function createEntryActions({
     },
 
     async regenerateEntryMetadata(id: string) {
+      await authorize();
       const entry = await db.query.entries.findFirst({
         where: eq(entries.id, id),
       });
@@ -118,7 +127,8 @@ export function createEntryActions({
     },
 
     async bulkRegenerateEntryMetadata(ids: string[]) {
-      const normalizedIds = ids.filter(Boolean);
+      await authorize();
+      const normalizedIds = normalizeEntryIds(ids);
       if (normalizedIds.length === 0) return;
 
       const foundEntries = await db.query.entries.findMany({
@@ -132,20 +142,23 @@ export function createEntryActions({
       }).where(inArray(entries.id, normalizedIds));
 
       await scheduleAI(async () => {
-        for (const id of normalizedIds) {
+        const jobs = normalizedIds.flatMap((id) => {
           const entry = entryMap.get(id);
-          if (!entry) continue;
-          await processAIEntry(id, entry.content).catch(err => {
-            console.error(`AI bulk regeneration failed for entry ${id}:`, err);
-          });
+          return entry ? [{ id, content: entry.content }] : [];
+        });
+        if (processAIEntries) {
+          await processAIEntries(jobs);
+          return;
         }
+        for (const job of jobs) await processAIEntry(job.id, job.content);
       });
 
       revalidatePath(dashboardPath());
     },
 
     async bulkDeleteEntries(ids: string[]) {
-      const normalizedIds = ids.filter(Boolean);
+      await authorize();
+      const normalizedIds = normalizeEntryIds(ids);
       if (normalizedIds.length === 0) return;
 
       await db.delete(entries).where(inArray(entries.id, normalizedIds));

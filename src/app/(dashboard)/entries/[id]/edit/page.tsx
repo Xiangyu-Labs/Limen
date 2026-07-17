@@ -3,12 +3,9 @@ import { entries } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save } from 'lucide-react';
-import { updateEntry } from '@/lib/actions/entries';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { EntryEditorShell, buildEntryEditorShellModel } from '@/components/EntryEditorShell';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { EntryEditorForm } from '@/components/EntryEditorForm';
 import { messages } from '@/lib/messages';
 import { entryDetailPath } from '@/lib/pathname';
 import { formatEntryDateForInput } from '@/lib/entry-date';
@@ -45,7 +42,6 @@ export default async function EditEntryPage({
   }
 
   const model = buildEditEntryFormModel(entry);
-  const shell = buildEntryEditorShellModel({ mode: 'edit', contentLength: model.content.length });
 
   return (
     <div className="mx-auto max-w-3xl space-y-3">
@@ -57,29 +53,12 @@ export default async function EditEntryPage({
         </Button>
       </div>
 
-      <EntryEditorShell title={shell.title} metaLabel={shell.metaLabel}>
-        <form action={updateEntry.bind(null, id)} className="flex min-h-[640px] flex-col md:min-h-[72vh]">
-          <div className="border-b border-border bg-surface px-4 py-3 md:px-5">
-            <label className="sr-only">{messages.editor.time}</label>
-            <Input name="createdAt" type="date" defaultValue={model.createdAt} className="max-w-56" />
-          </div>
-
-          <label className="sr-only">{messages.editor.content}</label>
-          <Textarea
-            name="content"
-            defaultValue={model.content}
-            className="flex-1 resize-none border-0 bg-transparent p-4 text-lg leading-8 focus-visible:ring-0 md:p-6"
-            required
-          />
-
-          <div className="flex justify-end border-t border-border bg-surface px-4 py-3 md:px-5">
-            <Button type="submit" className="h-10 px-4">
-              <Save className="h-4 w-4" />
-              <span>{shell.primaryActionLabel}</span>
-            </Button>
-          </div>
-        </form>
-      </EntryEditorShell>
+      <EntryEditorForm
+        mode="edit"
+        entryId={id}
+        initialContent={model.content}
+        initialCreatedAt={model.createdAt}
+      />
     </div>
   );
 }

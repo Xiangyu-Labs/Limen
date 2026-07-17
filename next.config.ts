@@ -1,10 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   allowedDevOrigins: ["192.168.6.156", "xiangyu-server", "xiangyu-server.lan"],
-  // experimental: {
-  //   after: true,
-  // },
+  experimental: {
+    optimizePackageImports: ["lucide-react"],
+  },
 };
 
 export default nextConfig;

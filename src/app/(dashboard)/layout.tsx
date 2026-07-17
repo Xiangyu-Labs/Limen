@@ -4,6 +4,9 @@ import { logout } from '@/lib/auth/actions';
 import { Button } from '@/components/ui/button';
 import { messages } from '@/lib/messages';
 import { dashboardPath, newEntryPath } from '@/lib/pathname';
+import { getSession } from '@/lib/auth/session';
+import { redirect } from 'next/navigation';
+import { loginPath } from '@/lib/pathname';
 
 export default async function DashboardLayout({
   children,
@@ -12,6 +15,7 @@ export default async function DashboardLayout({
   children: React.ReactNode;
   navControls: React.ReactNode;
 }) {
+  if (!await getSession()) redirect(loginPath());
   return (
     <div className="flex min-h-screen flex-col bg-bg">
       <header className="sticky top-0 z-10 border-b border-border bg-surface/95 backdrop-blur">

@@ -21,7 +21,29 @@ test("createEntry returns an error for blank content", async () => {
     formData.set("content", "   ");
     const result = await actions.createEntry(formData);
 
-    assert.deepEqual(result, { error: "Content is required" });
+    assert.deepEqual(result, { error: "内容不能为空" });
+  } finally {
+    fixture.cleanup();
+  }
+});
+
+test("entry mutations authorize before touching the database", async () => {
+  const { createEntryActions } = await import("@/lib/actions/entries-core");
+  const fixture = (await import("./helpers/test-db")).createTestDb();
+  try {
+    const actions = createEntryActions({
+      db: fixture.db,
+      createId: () => "unauthorized",
+      scheduleAI: () => {},
+      processAIEntry: async () => {},
+      revalidatePath: () => {},
+      redirect: () => { throw new Error("redirected"); },
+      authorize: () => { throw new Error("Unauthorized"); },
+    });
+    const formData = new FormData();
+    formData.set("content", "must not be inserted");
+    await assert.rejects(() => actions.createEntry(formData), /Unauthorized/);
+    assert.equal((await fixture.db.query.entries.findMany()).length, 0);
   } finally {
     fixture.cleanup();
   }
@@ -73,7 +95,9 @@ test("createEntry inserts a pending entry and redirects to dashboard", async () 
     assert.equal(redirectedTo, "/");
     assert.equal(typeof scheduled, "function");
 
-    await scheduled?.();
+    const scheduledJob = scheduled as (() => Promise<void>) | null;
+    assert.ok(scheduledJob);
+    await scheduledJob();
     assert.deepEqual(processed, {
       id: "entry-created",
       content: "Ship locale-aware redirects",
@@ -100,7 +124,7 @@ test("updateEntry keeps only raw diary fields and schedules AI metadata refresh"
     updatedAt: new Date("2024-01-01T08:00:00Z"),
   });
 
-  let revalidatedPaths: string[] = [];
+  const revalidatedPaths: string[] = [];
   let redirectedTo = "";
   let scheduled: (() => Promise<void>) | null = null;
   let processed: { id: string; content: string } | null = null;
@@ -129,7 +153,7 @@ test("updateEntry keeps only raw diary fields and schedules AI metadata refresh"
     formData.set("summary", "New summary should be ignored");
     formData.set("tags", "alpha, beta should be ignored");
     formData.set("content", "New content");
-    formData.set("createdAt", "2024-01-02T09:30");
+    formData.set("createdAt", "2024-01-02");
 
     await assert.rejects(() => actions.updateEntry("entry-update", formData), /redirected/);
 
@@ -147,7 +171,9 @@ test("updateEntry keeps only raw diary fields and schedules AI metadata refresh"
     assert.deepEqual(revalidatedPaths, ["/", "/entries/entry-update"]);
     assert.equal(redirectedTo, "/entries/entry-update");
 
-    await scheduled?.();
+    const scheduledJob = scheduled as (() => Promise<void>) | null;
+    assert.ok(scheduledJob);
+    await scheduledJob();
     assert.deepEqual(processed, {
       id: "entry-update",
       content: "New content",
@@ -216,7 +242,7 @@ test("regenerateEntryMetadata resets status and redirects to detail", async () =
   });
 
   let scheduled: (() => Promise<void>) | null = null;
-  let revalidatedPaths: string[] = [];
+  const revalidatedPaths: string[] = [];
   let redirectedTo = "";
 
   try {

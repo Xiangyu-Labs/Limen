@@ -1,6 +1,16 @@
 #!/bin/sh
 set -e
 
+if [ -z "${AUTH_PASSWORD:-}" ]; then
+  echo "[ERROR] AUTH_PASSWORD is required" >&2
+  exit 1
+fi
+
+if [ "${#SESSION_SECRET}" -lt 32 ]; then
+  echo "[ERROR] SESSION_SECRET must contain at least 32 characters" >&2
+  exit 1
+fi
+
 DATABASE_URL_VALUE="${DATABASE_URL:-sqlite:///./data/limen.db}"
 
 echo "========================================"
@@ -30,11 +40,5 @@ case "$DATABASE_URL_VALUE" in
     ;;
 esac
 
-echo "[INIT] Running database synchronization..."
-npm run db:push
-
-echo "[INIT] Running data migrations..."
-npm run db:migrate
-
 echo "[INIT] Starting application..."
-exec npm run start -- --hostname 0.0.0.0 --port "${PORT:-3000}"
+exec node server.js

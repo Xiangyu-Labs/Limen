@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 test("middleware redirects unauthenticated dashboard requests to login", async () => {
-  const { evaluateMiddlewareRequest } = await import("@/middleware");
+  const { evaluateProxyRequest: evaluateMiddlewareRequest } = await import("@/proxy");
 
   const result = await evaluateMiddlewareRequest({
     pathname: "/entries/new",
@@ -15,7 +15,7 @@ test("middleware redirects unauthenticated dashboard requests to login", async (
 });
 
 test("middleware redirects authenticated login requests to dashboard", async () => {
-  const { evaluateMiddlewareRequest } = await import("@/middleware");
+  const { evaluateProxyRequest: evaluateMiddlewareRequest } = await import("@/proxy");
 
   const result = await evaluateMiddlewareRequest({
     pathname: "/login",
@@ -28,7 +28,7 @@ test("middleware redirects authenticated login requests to dashboard", async () 
 });
 
 test("middleware allows authenticated dashboard requests", async () => {
-  const { evaluateMiddlewareRequest } = await import("@/middleware");
+  const { evaluateProxyRequest: evaluateMiddlewareRequest } = await import("@/proxy");
 
   const result = await evaluateMiddlewareRequest({
     pathname: "/",
@@ -41,7 +41,7 @@ test("middleware allows authenticated dashboard requests", async () => {
 });
 
 test("middleware redirects legacy locale paths to Chinese-only root routes", async () => {
-  const { evaluateMiddlewareRequest } = await import("@/middleware");
+  const { evaluateProxyRequest: evaluateMiddlewareRequest } = await import("@/proxy");
 
   const result = await evaluateMiddlewareRequest({
     pathname: "/zh/entries/1",
@@ -54,7 +54,7 @@ test("middleware redirects legacy locale paths to Chinese-only root routes", asy
 });
 
 test("middleware rejects unauthenticated api requests", async () => {
-  const { evaluateMiddlewareRequest } = await import("@/middleware");
+  const { evaluateProxyRequest: evaluateMiddlewareRequest } = await import("@/proxy");
 
   const result = await evaluateMiddlewareRequest({
     pathname: "/api/entries",
@@ -67,7 +67,7 @@ test("middleware rejects unauthenticated api requests", async () => {
 });
 
 test("middleware allows authenticated api requests", async () => {
-  const { evaluateMiddlewareRequest } = await import("@/middleware");
+  const { evaluateProxyRequest: evaluateMiddlewareRequest } = await import("@/proxy");
 
   const result = await evaluateMiddlewareRequest({
     pathname: "/api/entries",
@@ -80,12 +80,12 @@ test("middleware allows authenticated api requests", async () => {
 });
 
 test("middleware rejects api requests when auth is not configured", async () => {
-  const { evaluateMiddlewareRequest } = await import("@/middleware");
+  const { evaluateProxyRequest: evaluateMiddlewareRequest } = await import("@/proxy");
   assert.deepEqual(await evaluateMiddlewareRequest({ pathname: "/api/entries", hasSession: false, authHeader: "Bearer undefined", authPassword: undefined }), { type: "json", status: 401, body: { error: "Unauthorized" } });
 });
 
 test("middleware skip list covers favicon and static assets", async () => {
-  const { shouldBypassLocaleMiddleware } = await import("@/middleware");
+  const { shouldBypassProxy: shouldBypassLocaleMiddleware } = await import("@/proxy");
 
   assert.equal(shouldBypassLocaleMiddleware("/favicon.ico"), true);
   assert.equal(shouldBypassLocaleMiddleware("/robots.txt"), true);

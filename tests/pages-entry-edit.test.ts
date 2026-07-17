@@ -21,7 +21,7 @@ test("edit entry form model maps entry fields to editable values", async () => {
 });
 
 test("entry editor shell model exposes edit-mode copy", async () => {
-  const { buildEntryEditorShellModel } = await import("../src/components/EntryEditorShell.tsx");
+  const { buildEntryEditorShellModel } = await import("@/components/EntryEditorShell");
   const model = buildEntryEditorShellModel({ mode: "edit", contentLength: 12 });
 
   assert.equal(model.title, "编辑");

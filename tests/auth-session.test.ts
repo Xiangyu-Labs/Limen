@@ -21,3 +21,19 @@ test("session manager returns null when cookie store has no session", async () =
 
   assert.equal(session, null);
 });
+
+test("session manager treats invalid cookies as unauthenticated", async () => {
+  const { createSessionManager } = await import("@/lib/auth/session");
+  const manager = createSessionManager("test-secret");
+  assert.equal(await manager.getSession({ get: () => ({ value: "invalid" }) }), null);
+});
+
+test("session cookies use explicit security attributes", async () => {
+  const { sessionCookieOptions } = await import("@/lib/auth/session");
+  const expires = new Date("2024-02-01T00:00:00.000Z");
+  const options = sessionCookieOptions(expires);
+  assert.equal(options.httpOnly, true);
+  assert.equal(options.sameSite, "lax");
+  assert.equal(options.path, "/");
+  assert.equal(options.expires, expires);
+});

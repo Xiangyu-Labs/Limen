@@ -2,20 +2,21 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getSession } from '@/lib/auth/session';
 import { loginPath, stripLegacyLocalePath } from '@/lib/pathname';
+import { secureStringEqual } from '@/lib/auth/security';
 
-type MiddlewareDecisionInput = {
+type ProxyDecisionInput = {
   pathname: string;
   hasSession: boolean;
   authHeader: string | null;
   authPassword: string | undefined;
 };
 
-type MiddlewareDecision =
+type ProxyDecision =
   | { type: 'json'; status: number; body: { error: string } }
   | { type: 'redirect'; location: string }
   | { type: 'next' };
 
-export function shouldBypassLocaleMiddleware(pathname: string) {
+export function shouldBypassProxy(pathname: string) {
   return (
     pathname.startsWith('/_next/') ||
     pathname === '/favicon.ico' ||
@@ -26,68 +27,55 @@ export function shouldBypassLocaleMiddleware(pathname: string) {
   );
 }
 
-export function evaluateMiddlewareRequest({
+export function evaluateProxyRequest({
   pathname,
   hasSession,
   authHeader,
   authPassword,
-}: MiddlewareDecisionInput): MiddlewareDecision {
-  if (shouldBypassLocaleMiddleware(pathname)) {
-    return { type: 'next' };
+}: ProxyDecisionInput): ProxyDecision {
+  if (shouldBypassProxy(pathname)) return { type: 'next' };
+
+  if (pathname.startsWith('/api/dashboard')) {
+    return hasSession
+      ? { type: 'next' }
+      : { type: 'json', status: 401, body: { error: 'Unauthorized' } };
   }
 
   if (pathname.startsWith('/api')) {
-    if (!authPassword || !authHeader || authHeader !== `Bearer ${authPassword}`) {
+    if (!authPassword || !authHeader?.startsWith('Bearer ') || !secureStringEqual(authHeader.slice(7), authPassword)) {
       return { type: 'json', status: 401, body: { error: 'Unauthorized' } };
     }
-
     return { type: 'next' };
   }
 
   const normalizedPath = stripLegacyLocalePath(pathname);
-  if (normalizedPath !== pathname) {
-    return { type: 'redirect', location: normalizedPath };
-  }
-
+  if (normalizedPath !== pathname) return { type: 'redirect', location: normalizedPath };
   if (pathname === '/login') {
-    if (hasSession) {
-      return { type: 'redirect', location: '/' };
-    }
-
-    return { type: 'next' };
+    return hasSession ? { type: 'redirect', location: '/' } : { type: 'next' };
   }
-
-  if (pathname === '/' || pathname.startsWith('/entries')) {
-    if (!hasSession) {
-      return { type: 'redirect', location: loginPath() };
-    }
+  if ((pathname === '/' || pathname.startsWith('/entries')) && !hasSession) {
+    return { type: 'redirect', location: loginPath() };
   }
-
   return { type: 'next' };
 }
 
-export async function middleware(request: NextRequest) {
-  const authPassword = process.env.AUTH_PASSWORD;
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const session = await getSession();
-  const decision = evaluateMiddlewareRequest({
+  const needsSession = !pathname.startsWith('/api/') || pathname.startsWith('/api/dashboard');
+  const hasSession = needsSession ? Boolean(await getSession()) : false;
+  const decision = evaluateProxyRequest({
     pathname,
-    hasSession: Boolean(session),
-    authHeader: request.headers.get('Authorization'),
-    authPassword,
+    hasSession,
+    authHeader: request.headers.get('authorization'),
+    authPassword: process.env.AUTH_PASSWORD,
   });
 
   if (decision.type === 'json') {
-    return new NextResponse(JSON.stringify(decision.body), {
-      status: decision.status,
-      headers: { 'content-type': 'application/json' },
-    });
+    return NextResponse.json(decision.body, { status: decision.status });
   }
-
   if (decision.type === 'redirect') {
     return NextResponse.redirect(new URL(decision.location, request.url));
   }
-
   return NextResponse.next();
 }
 

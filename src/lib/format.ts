@@ -1,6 +1,10 @@
-import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+const absoluteDateFormatter = new Intl.DateTimeFormat('zh-CN', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
 
 export function formatAbsoluteDate(date: Date) {
-  return format(date, 'PPP', { locale: zhCN });
+  return absoluteDateFormatter.format(date);
 }

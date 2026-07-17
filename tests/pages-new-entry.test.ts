@@ -13,7 +13,7 @@ test("new entry submit is disabled for blank content and enabled for real conten
 });
 
 test("entry editor shell model exposes create-mode copy", async () => {
-  const { buildEntryEditorShellModel } = await import("../src/components/EntryEditorShell.tsx");
+  const { buildEntryEditorShellModel } = await import("@/components/EntryEditorShell");
   const model = buildEntryEditorShellModel({ mode: "create", contentLength: 42 });
 
   assert.equal(model.title, "新建");

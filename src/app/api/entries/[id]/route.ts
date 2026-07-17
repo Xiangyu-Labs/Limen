@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { entries } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { hasValidBearerToken } from '@/lib/auth/security';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!hasValidBearerToken(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   const { id } = await params;
 
   try {
@@ -29,6 +33,9 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!hasValidBearerToken(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   const { id } = await params;
 
   try {
