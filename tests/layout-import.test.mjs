@@ -10,4 +10,5 @@ test("root layout imports globals.css so Tailwind styles are loaded", () => {
     /import\s+["']\.\/globals\.css["'];/,
     "src/app/layout.tsx must import ./globals.css",
   );
+  assert.match(source, /export const dynamic = ['"]force-dynamic['"];/);
 });

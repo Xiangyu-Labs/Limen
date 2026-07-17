@@ -43,7 +43,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg p-6">
-      <form onSubmit={submit} className="w-full max-w-xs space-y-5">
+      <form method="post" onSubmit={submit} className="w-full max-w-xs space-y-5">
         <h1 className="text-center text-2xl font-semibold tracking-tight text-text">Limen</h1>
         <div>
           <label htmlFor="login-password" className="sr-only">{messages.login.password}</label>

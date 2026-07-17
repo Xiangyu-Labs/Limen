@@ -2,6 +2,9 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { AppToaster } from '@/components/AppToaster';
 
+// A per-request CSP nonce requires Next.js to render scripts dynamically.
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Limen',
   description: 'A personal diary app',
