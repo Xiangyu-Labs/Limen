@@ -23,6 +23,7 @@ test("dashboard view model hides pending AI status", async () => {
 
   assert.equal(model.items[0].statusLabel, null);
   assert.equal(model.items[0].statusTone, "muted");
+  assert.equal(model.items[0].isPending, true);
   assert.equal(model.items[0].displayTitle, "未命名记录");
 });
 
@@ -43,6 +44,7 @@ test("dashboard view model prefers AI-enhanced title, summary, and tags without 
   assert.equal(model.items[0].displaySummary, "Enhanced summary");
   assert.equal(model.items[0].statusLabel, null);
   assert.equal(model.items[0].statusTone, "muted");
+  assert.equal(model.items[0].isPending, false);
   assert.deepEqual(model.items[0].tags, ["one", "two"]);
 });
 
@@ -61,6 +63,7 @@ test("dashboard view model marks failed AI entries clearly", async () => {
 
   assert.equal(model.items[0].statusLabel, "失败");
   assert.equal(model.items[0].statusTone, "danger");
+  assert.equal(model.items[0].isPending, false);
 });
 
 test("dashboard top navigation only keeps search controls", () => {

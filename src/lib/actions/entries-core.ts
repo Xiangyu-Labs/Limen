@@ -1,4 +1,4 @@
-import { db as appDb } from '@/lib/db';
+import type { AppDatabase } from '@/lib/db';
 import { entries } from '@/lib/db/schema';
 import { processAIEntry as runAI } from '@/lib/ai/processor';
 import { revalidatePath as nextRevalidatePath } from 'next/cache';
@@ -8,7 +8,7 @@ import { dashboardPath, entryDetailPath } from '@/lib/pathname';
 import { InputValidationError, normalizeEntryIds, parseEntryInput } from '@/lib/validation';
 
 type EntryActionDeps = {
-  db: typeof appDb;
+  db: AppDatabase;
   createId: () => string;
   scheduleAI: (job: () => Promise<void>) => void | Promise<void>;
   processAIEntry: typeof runAI;

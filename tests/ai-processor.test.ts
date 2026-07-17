@@ -6,7 +6,7 @@ import { createTestDb } from "./helpers/test-db";
 import { seedEntry } from "./helpers/test-entries";
 
 test("processAIEntry marks an entry done with structured metadata on success", async () => {
-  const fixture = createTestDb();
+  const fixture = await createTestDb();
   type AIRequest = { messages: Array<{ content: string }> };
   let capturedRequest: AIRequest | null = null;
   try {
@@ -59,12 +59,12 @@ test("processAIEntry marks an entry done with structured metadata on success", a
     assert.match(request.messages[0].content, /最多 10 个/);
     assert.match(request.messages[0].content, /journal, testing/);
   } finally {
-    fixture.cleanup();
+    await fixture.cleanup();
   }
 });
 
 test("processAIEntry marks an entry failed when AI returns invalid JSON", async () => {
-  const fixture = createTestDb();
+  const fixture = await createTestDb();
   try {
     await seedEntry(fixture.db, {
       id: "entry-failure",
@@ -96,12 +96,12 @@ test("processAIEntry marks an entry failed when AI returns invalid JSON", async 
     assert.equal(row?.title, null);
     assert.equal(row?.summary, null);
   } finally {
-    fixture.cleanup();
+    await fixture.cleanup();
   }
 });
 
 test("long entries are processed in bounded chunks and summarized", async () => {
-  const fixture = createTestDb();
+  const fixture = await createTestDb();
   let active = 0;
   let maxActive = 0;
   let calls = 0;
@@ -130,6 +130,6 @@ test("long entries are processed in bounded chunks and summarized", async () => 
     assert.ok(maxActive <= 3);
     assert.equal((await fixture.db.query.entries.findFirst({ where: eq(entries.id, "entry-long") }))?.aiStatus, "done");
   } finally {
-    fixture.cleanup();
+    await fixture.cleanup();
   }
 });

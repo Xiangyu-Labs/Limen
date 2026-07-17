@@ -1,14 +1,11 @@
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
-import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { resolve } from "node:path";
+import { drizzle } from "drizzle-orm/neon-http";
+import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import * as schema from "./schema";
-import { ensureDatabaseDirectory, migrateLegacyDatabase, resolveDatabasePath } from "./config";
 
-const databasePath = resolveDatabasePath();
-ensureDatabaseDirectory(databasePath);
-migrateLegacyDatabase(databasePath);
+const databaseUrl = process.env.DATABASE_URL?.trim();
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is required");
+}
 
-const sqlite = new Database(databasePath);
-export const db = drizzle(sqlite, { schema });
-migrate(db, { migrationsFolder: resolve(process.cwd(), "drizzle") });
+export type AppDatabase = PgDatabase<PgQueryResultHKT, typeof schema>;
+export const db = drizzle(databaseUrl, { schema });

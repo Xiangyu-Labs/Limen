@@ -22,5 +22,5 @@ jobs:
         env:
           SESSION_SECRET: ci-session-secret-with-at-least-32-characters
           AUTH_PASSWORD: ci-password
-          DATABASE_URL: sqlite:///./data/ci.db
+          DATABASE_URL: postgresql://test:test@localhost:5432/limen_ci
       - run: npm audit --audit-level=high

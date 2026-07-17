@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 test("createEntry returns an error for blank content", async () => {
   const { createEntryActions } = await import("@/lib/actions/entries-core");
-  const fixture = (await import("./helpers/test-db")).createTestDb();
+  const fixture = await (await import("./helpers/test-db")).createTestDb();
 
   try {
     const actions = createEntryActions({
@@ -23,13 +23,13 @@ test("createEntry returns an error for blank content", async () => {
 
     assert.deepEqual(result, { error: "内容不能为空" });
   } finally {
-    fixture.cleanup();
+    await fixture.cleanup();
   }
 });
 
 test("entry mutations authorize before touching the database", async () => {
   const { createEntryActions } = await import("@/lib/actions/entries-core");
-  const fixture = (await import("./helpers/test-db")).createTestDb();
+  const fixture = await (await import("./helpers/test-db")).createTestDb();
   try {
     const actions = createEntryActions({
       db: fixture.db,
@@ -45,7 +45,7 @@ test("entry mutations authorize before touching the database", async () => {
     await assert.rejects(() => actions.createEntry(formData), /Unauthorized/);
     assert.equal((await fixture.db.query.entries.findMany()).length, 0);
   } finally {
-    fixture.cleanup();
+    await fixture.cleanup();
   }
 });
 
@@ -53,7 +53,7 @@ test("createEntry inserts a pending entry and redirects to dashboard", async () 
   const { createEntryActions } = await import("@/lib/actions/entries-core");
   const { eq } = await import("drizzle-orm");
   const { entries } = await import("@/lib/db/schema");
-  const fixture = (await import("./helpers/test-db")).createTestDb();
+  const fixture = await (await import("./helpers/test-db")).createTestDb();
 
   let processed: { id: string; content: string } | null = null;
   let scheduled: (() => Promise<void>) | null = null;
@@ -103,7 +103,7 @@ test("createEntry inserts a pending entry and redirects to dashboard", async () 
       content: "Ship locale-aware redirects",
     });
   } finally {
-    fixture.cleanup();
+    await fixture.cleanup();
   }
 });
 
@@ -111,7 +111,7 @@ test("updateEntry keeps only raw diary fields and schedules AI metadata refresh"
   const { createEntryActions } = await import("@/lib/actions/entries-core");
   const { eq } = await import("drizzle-orm");
   const { entries } = await import("@/lib/db/schema");
-  const fixture = (await import("./helpers/test-db")).createTestDb();
+  const fixture = await (await import("./helpers/test-db")).createTestDb();
 
   await fixture.db.insert(entries).values({
     id: "entry-update",
@@ -179,7 +179,7 @@ test("updateEntry keeps only raw diary fields and schedules AI metadata refresh"
       content: "New content",
     });
   } finally {
-    fixture.cleanup();
+    await fixture.cleanup();
   }
 });
 
@@ -187,7 +187,7 @@ test("deleteEntry removes an existing entry and redirects to dashboard", async (
   const { createEntryActions } = await import("@/lib/actions/entries-core");
   const { eq } = await import("drizzle-orm");
   const { entries } = await import("@/lib/db/schema");
-  const fixture = (await import("./helpers/test-db")).createTestDb();
+  const fixture = await (await import("./helpers/test-db")).createTestDb();
 
   await fixture.db.insert(entries).values({
     id: "entry-delete",
@@ -220,7 +220,7 @@ test("deleteEntry removes an existing entry and redirects to dashboard", async (
     assert.equal(row, undefined);
     assert.equal(redirectedTo, "/");
   } finally {
-    fixture.cleanup();
+    await fixture.cleanup();
   }
 });
 
@@ -228,7 +228,7 @@ test("regenerateEntryMetadata resets status and redirects to detail", async () =
   const { createEntryActions } = await import("@/lib/actions/entries-core");
   const { eq } = await import("drizzle-orm");
   const { entries } = await import("@/lib/db/schema");
-  const fixture = (await import("./helpers/test-db")).createTestDb();
+  const fixture = await (await import("./helpers/test-db")).createTestDb();
 
   await fixture.db.insert(entries).values({
     id: "entry-regenerate",
@@ -273,6 +273,6 @@ test("regenerateEntryMetadata resets status and redirects to detail", async () =
     assert.deepEqual(revalidatedPaths, ["/", "/entries/entry-regenerate"]);
     assert.equal(redirectedTo, "/entries/entry-regenerate");
   } finally {
-    fixture.cleanup();
+    await fixture.cleanup();
   }
 });

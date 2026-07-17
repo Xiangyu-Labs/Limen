@@ -4,6 +4,9 @@ import { entries } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { hasValidBearerToken } from '@/lib/auth/security';
 
+export const maxDuration = 60;
+export const preferredRegion = 'sin1';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

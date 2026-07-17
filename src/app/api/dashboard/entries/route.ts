@@ -4,6 +4,9 @@ import { getSession } from '@/lib/auth/session';
 import { InputValidationError, normalizeSearchQuery } from '@/lib/validation';
 import { decodeEntryCursor } from '@/lib/pagination';
 
+export const maxDuration = 60;
+export const preferredRegion = 'sin1';
+
 export async function GET(request: Request) {
   if (!await getSession()) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

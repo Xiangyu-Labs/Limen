@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { messages } from '@/lib/messages';
 import { dashboardPath, entryEditPath } from '@/lib/pathname';
 import { parseStoredTags } from '@/lib/tags';
+import { PendingAIRefresh } from '@/components/PendingAIRefresh';
 
 export function buildEntryDetailViewModel(
   entry: {
@@ -53,6 +54,7 @@ export default async function EntryDetailPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
+      {entry.aiStatus === 'pending' ? <PendingAIRefresh /> : null}
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="icon" asChild className="-ml-2 text-muted hover:text-primary">
           <Link href={dashboardPath()} aria-label={messages.common.timeline}>

@@ -1,5 +1,5 @@
-import { and, desc, eq, lt, or, sql, type SQL } from 'drizzle-orm';
-import { db } from '@/lib/db';
+import { and, desc, eq, ilike, lt, or, sql, type SQL } from 'drizzle-orm';
+import { db, type AppDatabase } from '@/lib/db';
 import { entries } from '@/lib/db/schema';
 import { decodeEntryCursor, encodeEntryCursor } from '@/lib/pagination';
 import { normalizeSearchQuery } from '@/lib/validation';
@@ -34,6 +34,7 @@ export type TimelineEntry = {
   statusTone: 'danger' | 'muted';
   tags: string[];
   createdAt: string;
+  isPending: boolean;
 };
 
 export type TimelineEntriesPage = {
@@ -52,6 +53,7 @@ export function buildTimelineEntriesPage(page: DashboardEntriesPage): TimelineEn
       statusLabel: entry.aiStatus === 'failed' ? messages.common.failed : null,
       statusTone: entry.aiStatus === 'failed' ? 'danger' : 'muted',
       createdAt: entry.createdAt.toISOString(),
+      isPending: entry.aiStatus === 'pending',
     })),
   };
 }
@@ -65,11 +67,11 @@ function buildEntryWhere(q?: string, cursorValue?: string): SQL | undefined {
   const query = normalizeSearchQuery(q);
   if (query) {
     const pattern = `%${escapeLikePattern(query)}%`;
-    conditions.push(sql`(
-      ${entries.content} LIKE ${pattern} ESCAPE '\\'
-      OR ${entries.title} LIKE ${pattern} ESCAPE '\\'
-      OR ${entries.summary} LIKE ${pattern} ESCAPE '\\'
-    )`);
+    conditions.push(or(
+      ilike(entries.content, pattern),
+      ilike(entries.title, pattern),
+      ilike(entries.summary, pattern),
+    ) as SQL);
   }
 
   const cursor = decodeEntryCursor(cursorValue);
@@ -92,11 +94,11 @@ export async function loadDashboardEntriesPage({
   q?: string;
   cursor?: string;
   limit?: number;
-}, database: typeof db = db): Promise<DashboardEntriesPage> {
+}, database: AppDatabase = db): Promise<DashboardEntriesPage> {
   const rows = await database.select({
     id: entries.id,
     title: entries.title,
-    preview: sql<string>`substr(coalesce(${entries.summary}, ${entries.content}), 1, ${DASHBOARD_PREVIEW_LENGTH})`,
+    preview: sql<string>`left(coalesce(${entries.summary}, ${entries.content}), ${DASHBOARD_PREVIEW_LENGTH})`,
     tags: entries.tags,
     aiStatus: entries.aiStatus,
     createdAt: entries.createdAt,
@@ -126,7 +128,7 @@ export async function loadApiEntriesPage({
 }: {
   cursor?: string;
   limit: number;
-}, database: typeof db = db) {
+}, database: AppDatabase = db) {
   const rows = await database.select().from(entries)
     .where(buildEntryWhere(undefined, cursor))
     .orderBy(desc(entries.createdAt), desc(entries.id))

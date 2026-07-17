@@ -5,14 +5,14 @@ test("test harness can create and clean up a temp database", async () => {
   const { createTestDb } = await import("./helpers/test-db.ts");
   const { seedEntry } = await import("./helpers/test-entries.ts");
 
-  const fixture = createTestDb();
+  const fixture = await createTestDb();
   try {
     const seeded = await seedEntry(fixture.db, { id: "harness-entry" });
     assert.equal(seeded.id, "harness-entry");
 
-    const rows = fixture.sqlite.prepare("SELECT COUNT(*) AS count FROM entries").get();
-    assert.equal(rows.count, 1);
+    const rows = await fixture.client.query("SELECT COUNT(*)::int AS count FROM entries");
+    assert.equal(rows.rows[0].count, 1);
   } finally {
-    fixture.cleanup();
+    await fixture.cleanup();
   }
 });

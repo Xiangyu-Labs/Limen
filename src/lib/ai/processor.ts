@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
-import { db } from '@/lib/db';
+import { db, type AppDatabase } from '@/lib/db';
 import { entries } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { normalizeTags, parseStoredTags } from '@/lib/tags';
@@ -17,7 +17,7 @@ const aiResponseSchema = z.object({
 
 export type AIResponse = z.infer<typeof aiResponseSchema>;
 
-export async function getExistingTags(database: typeof db) {
+export async function getExistingTags(database: AppDatabase) {
   const rows = await database.query.entries.findMany({ columns: { tags: true } });
   const tags = new Set<string>();
   for (const row of rows) {
@@ -41,7 +41,7 @@ type AIClient = {
 };
 
 type ProcessorDeps = {
-  db: typeof db;
+  db: AppDatabase;
   client: AIClient;
   model?: string;
 };

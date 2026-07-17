@@ -4,7 +4,7 @@ import { createTestDb } from "./helpers/test-db";
 import { seedEntry } from "./helpers/test-entries";
 
 test("POST rejects requests without string content", async () => {
-  const fixture = createTestDb();
+  const fixture = await createTestDb();
   try {
     const { createEntriesRouteHandlers } = await import("@/app/api/entries/route");
     const handlers = createEntriesRouteHandlers({
@@ -25,12 +25,12 @@ test("POST rejects requests without string content", async () => {
 
     assert.equal(response.status, 400);
   } finally {
-    fixture.cleanup();
+    await fixture.cleanup();
   }
 });
 
 test("route handlers authenticate requests internally", async () => {
-  const fixture = createTestDb();
+  const fixture = await createTestDb();
   try {
     const { createEntriesRouteHandlers } = await import("@/app/api/entries/route");
     const handlers = createEntriesRouteHandlers({
@@ -43,12 +43,12 @@ test("route handlers authenticate requests internally", async () => {
     const response = await handlers.GET(new Request("http://localhost/api/entries"));
     assert.equal(response.status, 401);
   } finally {
-    fixture.cleanup();
+    await fixture.cleanup();
   }
 });
 
 test("POST rejects content over the configured limit", async () => {
-  const fixture = createTestDb();
+  const fixture = await createTestDb();
   try {
     const { createEntriesRouteHandlers } = await import("@/app/api/entries/route");
     const { ENTRY_CONTENT_MAX_LENGTH } = await import("@/lib/validation");
@@ -66,12 +66,12 @@ test("POST rejects content over the configured limit", async () => {
     }));
     assert.equal(response.status, 413);
   } finally {
-    fixture.cleanup();
+    await fixture.cleanup();
   }
 });
 
 test("POST inserts an entry and schedules AI processing", async () => {
-  const fixture = createTestDb();
+  const fixture = await createTestDb();
   let processed: { id: string; content: string } | null = null;
 
   try {
@@ -106,12 +106,12 @@ test("POST inserts an entry and schedules AI processing", async () => {
     });
     assert.equal(row?.createdAt?.toISOString(), "2024-01-04T00:00:00.000Z");
   } finally {
-    fixture.cleanup();
+    await fixture.cleanup();
   }
 });
 
 test("POST rejects invalid JSON and blank content", async () => {
-  const fixture = createTestDb();
+  const fixture = await createTestDb();
   try {
     const { createEntriesRouteHandlers } = await import("@/app/api/entries/route");
     const handlers = createEntriesRouteHandlers({ db: fixture.db, createId: () => "unused", processAIEntry: async () => {}, schedule: async (fn) => fn(), authorizeRequest: () => true });
@@ -119,11 +119,11 @@ test("POST rejects invalid JSON and blank content", async () => {
     assert.equal(invalidJson.status, 400);
     const blank = await handlers.POST(new Request("http://localhost/api/entries", { method: "POST", body: JSON.stringify({ content: "   " }), headers: { "content-type": "application/json" } }));
     assert.equal(blank.status, 400);
-  } finally { fixture.cleanup(); }
+  } finally { await fixture.cleanup(); }
 });
 
 test("POST keeps the entry when AI scheduling fails", async () => {
-  const fixture = createTestDb();
+  const fixture = await createTestDb();
   try {
     const { createEntriesRouteHandlers } = await import("@/app/api/entries/route");
     const handlers = createEntriesRouteHandlers({ db: fixture.db, createId: () => "scheduled-entry", processAIEntry: async () => {}, schedule: async () => { throw new Error("scheduler unavailable"); }, authorizeRequest: () => true });
@@ -131,11 +131,11 @@ test("POST keeps the entry when AI scheduling fails", async () => {
     assert.equal(response.status, 201);
     const row = await fixture.db.query.entries.findFirst({ where: (fields, { eq }) => eq(fields.id, "scheduled-entry") });
     assert.equal(row?.content, "Saved before scheduler failure");
-  } finally { fixture.cleanup(); }
+  } finally { await fixture.cleanup(); }
 });
 
 test("GET returns newest entries first", async () => {
-  const fixture = createTestDb();
+  const fixture = await createTestDb();
   try {
     await seedEntry(fixture.db, {
       id: "older",
@@ -169,6 +169,6 @@ test("GET returns newest entries first", async () => {
     assert.equal(body.items[1].id, "older");
     assert.deepEqual(body.pageInfo, { hasMore: false, limit: 10, nextCursor: null });
   } finally {
-    fixture.cleanup();
+    await fixture.cleanup();
   }
 });

@@ -13,6 +13,7 @@ function page(ids: string[]): TimelineEntriesPage {
       statusTone: 'muted',
       tags: [],
       createdAt: '2024-01-01T00:00:00.000Z',
+      isPending: false,
     })),
     pageInfo: { hasMore: false, nextCursor: null, limit: 20 },
   };

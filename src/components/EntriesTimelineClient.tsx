@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useTransition } from 'react';
 import useSWRInfinite from 'swr/infinite';
 import { Calendar, Loader2, Sparkles } from 'lucide-react';
 import { bulkRegenerateEntryMetadata } from '@/lib/actions/entries';
@@ -9,6 +9,7 @@ import type { TimelineEntriesPage } from '@/lib/dashboard-data';
 import { messages } from '@/lib/messages';
 import { entryDetailPath } from '@/lib/pathname';
 import { mergeTimelinePages } from '@/lib/timeline';
+import { AI_POLL_INTERVAL_MS, shouldPollPendingAI } from '@/lib/ai/polling';
 
 const entryDateFormatter = new Intl.DateTimeFormat('zh-CN', {
   month: '2-digit',
@@ -30,7 +31,19 @@ export function EntriesTimelineClient({
   query?: string;
 }) {
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const pendingStartedAtRef = useRef<number | null>(null);
   const [isRetryPending, startRetryTransition] = useTransition();
+  const refreshPendingEntries = useCallback((latestData?: TimelineEntriesPage[]) => {
+    const hasPending = latestData?.some((page) => page.items.some((entry) => entry.isPending)) ?? false;
+    if (!hasPending) {
+      pendingStartedAtRef.current = null;
+      return 0;
+    }
+    pendingStartedAtRef.current ??= Date.now();
+    return shouldPollPendingAI(true, pendingStartedAtRef.current, Date.now())
+      ? AI_POLL_INTERVAL_MS
+      : 0;
+  }, []);
   const { data, error, isValidating, size, setSize, mutate } = useSWRInfinite<TimelineEntriesPage>(
     (pageIndex, previousPage) => {
       if (previousPage && !previousPage.pageInfo.hasMore) return null;
@@ -42,7 +55,11 @@ export function EntriesTimelineClient({
       return `/api/dashboard/entries?${params.toString()}`;
     },
     fetchTimelinePage,
-    { fallbackData: [initialPage], revalidateFirstPage: false },
+    {
+      fallbackData: [initialPage],
+      revalidateFirstPage: false,
+      refreshInterval: refreshPendingEntries,
+    },
   );
 
   const timelineEntries = useMemo(() => mergeTimelinePages(data), [data]);

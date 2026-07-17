@@ -1,20 +1,19 @@
 import { existsSync } from "node:fs";
 import { defineConfig } from "drizzle-kit";
-import { ensureDatabaseDirectory, migrateLegacyDatabase, resolveDatabasePath } from "./src/lib/db/config";
 
-if (!process.env.DATABASE_URL && typeof process.loadEnvFile === "function" && existsSync(".env")) {
-  process.loadEnvFile(".env");
+if (!process.env.DATABASE_URL && typeof process.loadEnvFile === "function") {
+  const envFile = [".env.local", ".env"].find((candidate) => existsSync(candidate));
+  if (envFile) process.loadEnvFile(envFile);
 }
 
-const databasePath = resolveDatabasePath();
-ensureDatabaseDirectory(databasePath);
-migrateLegacyDatabase(databasePath);
+const databaseUrl = process.env.DATABASE_URL?.trim();
+if (!databaseUrl) throw new Error("DATABASE_URL is required");
 
 export default defineConfig({
   schema: "./src/lib/db/schema.ts",
   out: "./drizzle",
-  dialect: "sqlite",
+  dialect: "postgresql",
   dbCredentials: {
-    url: databasePath,
+    url: databaseUrl,
   },
 });

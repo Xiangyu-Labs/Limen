@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { after } from 'next/server';
-import { db } from '@/lib/db';
+import { db, type AppDatabase } from '@/lib/db';
 import { entries } from '@/lib/db/schema';
 import { processAIEntry } from '@/lib/ai/processor';
 import { nanoid } from 'nanoid';
@@ -9,8 +9,11 @@ import { hasValidBearerToken } from '@/lib/auth/security';
 import { InputValidationError, parseEntryInput } from '@/lib/validation';
 import { parsePageLimit } from '@/lib/pagination';
 
+export const maxDuration = 60;
+export const preferredRegion = 'sin1';
+
 type RouteDeps = {
-  db: typeof db;
+  db: AppDatabase;
   createId: () => string;
   processAIEntry: typeof processAIEntry;
   schedule: (fn: () => Promise<void>) => void | Promise<void>;
