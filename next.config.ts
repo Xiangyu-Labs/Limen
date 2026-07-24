@@ -1,7 +1,13 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
-const nextConfig: NextConfig = {
-  allowedDevOrigins: ["192.168.6.156", "xiangyu-server", "xiangyu-server.lan"],
-};
+const nextConfig: NextConfig = {};
+
+const allowedDevOrigins = process.env.ALLOWED_DEV_ORIGINS?.split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+if (allowedDevOrigins && allowedDevOrigins.length > 0) {
+  nextConfig.allowedDevOrigins = allowedDevOrigins;
+}
 
 export default nextConfig;

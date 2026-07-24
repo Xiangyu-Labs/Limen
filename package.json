@@ -1,20 +1,18 @@
 {
   "name": "limen",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs",
-    "test": "tests"
-  },
+  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test:node": "DATABASE_URL=postgresql://test:test@localhost:5432/limen_test node --import tsx --test",
-    "test": "npm run test:node",
+    "test": "node --import tsx --import ./tests/setup.ts --test tests/*.test.ts tests/*.test.mjs",
     "lint": "eslint",
+    "lint:fix": "eslint --fix",
     "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:generate": "drizzle-kit generate",
     "auth:hash-password": "tsx scripts/hash-password.ts",
@@ -27,8 +25,6 @@
     "type": "git",
     "url": "git+https://github.com/xiangyumou/Limen.git"
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/xiangyumou/Limen/issues"
@@ -68,6 +64,7 @@
     "eslint-config-next": "^16.2.2",
     "jsdom": "^29.1.1",
     "postcss": "8.5.19",
+    "prettier": "^3.9.6",
     "tailwindcss": "^4.2.2",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"
