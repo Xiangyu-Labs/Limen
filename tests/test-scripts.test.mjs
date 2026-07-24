@@ -76,13 +76,10 @@ test('npm-publishing boilerplate is removed', () => {
   assert.equal(PKG.author, undefined);
 });
 
-test('packageManager is declared and matches expected format', () => {
-  assert.ok(
-    typeof PKG.packageManager === 'string',
-    'Expected packageManager field to be a string',
-  );
-  assert.ok(
-    /^npm@\d+\.\d+\.\d+$/.test(PKG.packageManager),
-    `Expected packageManager to match "npm@<version>" format, got "${PKG.packageManager}"`,
+test('packageManager is pinned to exact version', () => {
+  assert.equal(
+    PKG.packageManager,
+    'npm@11.17.0',
+    `Expected packageManager to be "npm@11.17.0", got "${PKG.packageManager}"`,
   );
 });
