@@ -1,60 +1,67 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 
-test('next config reads ALLOWED_DEV_ORIGINS from environment', () => {
-  const source = readFileSync(
-    new URL('../next.config.ts', import.meta.url),
-    'utf8',
-  );
+/**
+ * Dynamically import next.config.ts with a cache-busting query parameter so
+ * that each call re-evaluates the module with the current process.env values.
+ */
+async function importConfig() {
+  const url = new URL('../next.config.ts', import.meta.url);
+  url.searchParams.set('t', String(Date.now()));
+  const mod = await import(url.href);
+  return mod.default ?? mod;
+}
 
+test('next config omits allowedDevOrigins when env var is absent', async () => {
+  delete process.env.ALLOWED_DEV_ORIGINS;
+
+  const config = await importConfig();
   assert.ok(
-    source.includes('ALLOWED_DEV_ORIGINS'),
-    'next.config.ts must reference ALLOWED_DEV_ORIGINS environment variable',
-  );
-  assert.ok(
-    source.includes('process.env'),
-    'next.config.ts must read from process.env',
+    !('allowedDevOrigins' in config),
+    'allowedDevOrigins should be omitted when ALLOWED_DEV_ORIGINS is not set',
   );
 });
 
-test('next config does not contain hardcoded origins', () => {
-  const source = readFileSync(
-    new URL('../next.config.ts', import.meta.url),
-    'utf8',
-  );
+test('next config omits allowedDevOrigins for blank input', async () => {
+  process.env.ALLOWED_DEV_ORIGINS = '';
 
+  const config = await importConfig();
   assert.ok(
-    !source.includes('allowedDevOrigins:'),
-    'next.config.ts should not contain a hardcoded allowedDevOrigins literal. ' +
-      'Origins must be set via the ALLOWED_DEV_ORIGINS environment variable.',
+    !('allowedDevOrigins' in config),
+    'allowedDevOrigins should be omitted when ALLOWED_DEV_ORIGINS is empty',
   );
 });
 
-test('next config parses comma-separated origins correctly', () => {
-  // Test the parsing logic in isolation by evaluating the config module's
-  // approach: split by comma, trim whitespace, remove empty entries.
+test('next config omits allowedDevOrigins for whitespace-only input', async () => {
+  process.env.ALLOWED_DEV_ORIGINS = '   ';
 
-  const inputs = [
-    ['localhost,192.168.1.100', ['localhost', '192.168.1.100']],
-    [' localhost , 192.168.1.100 ', ['localhost', '192.168.1.100']],
-    ['', null],
-    ['  ', null],
-    ['localhost', ['localhost']],
-  ];
+  const config = await importConfig();
+  assert.ok(
+    !('allowedDevOrigins' in config),
+    'allowedDevOrigins should be omitted when ALLOWED_DEV_ORIGINS is whitespace',
+  );
+});
 
-  for (const [raw, expected] of inputs) {
-    if (raw) {
-      const result = raw
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
+test('next config parses comma-separated origins correctly', async () => {
+  process.env.ALLOWED_DEV_ORIGINS = 'localhost,example.com';
 
-      if (expected) {
-        assert.deepEqual(result, expected);
-      } else {
-        assert.equal(result.length, 0);
-      }
-    }
-  }
+  const config = await importConfig();
+  assert.ok('allowedDevOrigins' in config);
+  assert.deepEqual(config.allowedDevOrigins, ['localhost', 'example.com']);
+});
+
+test('next config trims whitespace from origins', async () => {
+  process.env.ALLOWED_DEV_ORIGINS = '  localhost , example.com  ';
+
+  const config = await importConfig();
+  assert.ok('allowedDevOrigins' in config);
+  assert.deepEqual(config.allowedDevOrigins, ['localhost', 'example.com']);
+});
+
+test('next config handles single origin', async () => {
+  process.env.ALLOWED_DEV_ORIGINS = 'localhost';
+
+  const config = await importConfig();
+  assert.ok('allowedDevOrigins' in config);
+  assert.deepEqual(config.allowedDevOrigins, ['localhost']);
 });

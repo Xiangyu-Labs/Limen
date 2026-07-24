@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
+const PKG = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+);
+
 const REQUIRED_SCRIPTS = [
   'dev',
   'build',
@@ -20,44 +24,32 @@ const REQUIRED_SCRIPTS = [
 ];
 
 test('package.json exposes all required scripts', () => {
-  const pkg = JSON.parse(
-    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
-  );
-
   for (const script of REQUIRED_SCRIPTS) {
     assert.ok(
-      typeof pkg.scripts[script] === 'string',
+      typeof PKG.scripts[script] === 'string',
       `Expected script "${script}" to be defined`,
     );
   }
 });
 
 test('package.json does not contain test:node', () => {
-  const pkg = JSON.parse(
-    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
-  );
-
-  assert.equal(pkg.scripts['test:node'], undefined);
+  assert.equal(PKG.scripts['test:node'], undefined);
 });
 
 test('test command selects test files explicitly', () => {
-  const pkg = JSON.parse(
-    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
-  );
-
-  const testScript = pkg.scripts.test;
+  const testScript = PKG.scripts.test;
   assert.ok(
-    testScript.includes('tests/*.test.ts') || testScript.includes('--test'),
-    'test command must reference test file patterns',
+    testScript.includes('tests/*.test.ts'),
+    'test command must reference tests/*.test.ts pattern',
+  );
+  assert.ok(
+    testScript.includes('tests/*.test.mjs'),
+    'test command must reference tests/*.test.mjs pattern',
   );
 });
 
 test('check aggregate includes format:check, lint, typecheck, and test', () => {
-  const pkg = JSON.parse(
-    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
-  );
-
-  const checkScript = pkg.scripts.check;
+  const checkScript = PKG.scripts.check;
   assert.ok(checkScript.includes('format:check'));
   assert.ok(checkScript.includes('lint'));
   assert.ok(checkScript.includes('typecheck'));
@@ -65,37 +57,32 @@ test('check aggregate includes format:check, lint, typecheck, and test', () => {
 });
 
 test('test command loads setup.ts bootstrap', () => {
-  const pkg = JSON.parse(
-    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
-  );
-
-  assert.ok(pkg.scripts.test.includes('./tests/setup.ts'));
+  assert.ok(PKG.scripts.test.includes('./tests/setup.ts'));
 });
 
 test('engines.node is 24.x', () => {
-  const pkg = JSON.parse(
-    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
-  );
-
-  assert.equal(pkg.engines.node, '24.x');
+  assert.equal(PKG.engines.node, '24.x');
 });
 
 test('package is private', () => {
-  const pkg = JSON.parse(
-    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
-  );
-
-  assert.equal(pkg.private, true);
+  assert.equal(PKG.private, true);
 });
 
 test('npm-publishing boilerplate is removed', () => {
-  const pkg = JSON.parse(
-    readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
-  );
+  assert.equal(PKG.main, undefined);
+  assert.equal(PKG.description, undefined);
+  assert.equal(PKG.directories, undefined);
+  assert.equal(PKG.keywords, undefined);
+  assert.equal(PKG.author, undefined);
+});
 
-  assert.equal(pkg.main, undefined);
-  assert.equal(pkg.description, undefined);
-  assert.equal(pkg.directories, undefined);
-  assert.equal(pkg.keywords, undefined);
-  assert.equal(pkg.author, undefined);
+test('packageManager is declared and matches expected format', () => {
+  assert.ok(
+    typeof PKG.packageManager === 'string',
+    'Expected packageManager field to be a string',
+  );
+  assert.ok(
+    /^npm@\d+\.\d+\.\d+$/.test(PKG.packageManager),
+    `Expected packageManager to match "npm@<version>" format, got "${PKG.packageManager}"`,
+  );
 });

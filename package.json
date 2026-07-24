@@ -18,6 +18,7 @@
     "auth:hash-password": "tsx scripts/hash-password.ts",
     "auth:generate-api-token": "tsx scripts/generate-api-token.ts"
   },
+  "packageManager": "npm@11.17.0",
   "engines": {
     "node": "24.x"
   },
