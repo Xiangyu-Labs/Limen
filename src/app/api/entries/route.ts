@@ -45,12 +45,21 @@ export function createEntriesRouteHandlers({
         try {
           body = await request.json();
         } catch {
-          return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+          return NextResponse.json(
+            { error: 'Invalid JSON body' },
+            { status: 400 },
+          );
         }
         if (!body || typeof body !== 'object') {
-          return NextResponse.json({ error: 'Request body must be a JSON object' }, { status: 400 });
+          return NextResponse.json(
+            { error: 'Request body must be a JSON object' },
+            { status: 400 },
+          );
         }
-        const { content, createdAt } = body as { content?: unknown; createdAt?: unknown };
+        const { content, createdAt } = body as {
+          content?: unknown;
+          createdAt?: unknown;
+        };
         const input = parseEntryInput(content, createdAt);
 
         id = createId();
@@ -63,15 +72,24 @@ export function createEntriesRouteHandlers({
         });
 
         try {
-          await schedule(async () => processAIEntry(id as string, input.content));
+          await schedule(async () =>
+            processAIEntry(id as string, input.content),
+          );
         } catch (error) {
           console.error(`AI scheduling failed for entry ${id}:`, error);
         }
-        return NextResponse.json({ id, status: 'created', aiStatus: 'pending' }, { status: 201 });
+        return NextResponse.json(
+          { id, status: 'created', aiStatus: 'pending' },
+          { status: 201 },
+        );
       } catch (error) {
-        if (error instanceof InputValidationError) return validationResponse(error);
+        if (error instanceof InputValidationError)
+          return validationResponse(error);
         console.error(`Error creating entry${id ? ` ${id}` : ''}:`, error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json(
+          { error: 'Internal Server Error' },
+          { status: 500 },
+        );
       }
     },
 
@@ -86,9 +104,13 @@ export function createEntriesRouteHandlers({
         const page = await loadApiEntriesPage({ limit, cursor }, database);
         return NextResponse.json(page);
       } catch (error) {
-        if (error instanceof InputValidationError) return validationResponse(error);
+        if (error instanceof InputValidationError)
+          return validationResponse(error);
         console.error('Error fetching entries:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json(
+          { error: 'Internal Server Error' },
+          { status: 500 },
+        );
       }
     },
   };

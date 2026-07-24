@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import { buildTimelineEntriesPage, loadDashboardEntriesPage } from '@/lib/dashboard-data';
+import {
+  buildTimelineEntriesPage,
+  loadDashboardEntriesPage,
+} from '@/lib/dashboard-data';
 import { getSession } from '@/lib/auth/session';
 import { InputValidationError, normalizeSearchQuery } from '@/lib/validation';
 import { decodeEntryCursor } from '@/lib/pagination';
@@ -8,7 +11,7 @@ export const maxDuration = 60;
 export const preferredRegion = 'sin1';
 
 export async function GET(request: Request) {
-  if (!await getSession()) {
+  if (!(await getSession())) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   try {
@@ -23,6 +26,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     console.error('Error fetching dashboard entries:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
+      { status: 500 },
+    );
   }
 }

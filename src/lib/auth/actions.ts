@@ -4,7 +4,12 @@ import { after } from 'next/server';
 import { cookies, headers } from 'next/headers';
 import { createAuthActions } from './action-core';
 import { createLoginAttemptKey, verifyPassword } from './security';
-import { createSession, SESSION_COOKIE_NAME, sessionCookieOptions, sessionExpiry } from './session';
+import {
+  createSession,
+  SESSION_COOKIE_NAME,
+  sessionCookieOptions,
+  sessionExpiry,
+} from './session';
 import {
   cleanupLoginAttempts,
   clearLoginFailures,
@@ -13,11 +18,19 @@ import {
 } from './rate-limit';
 
 async function setSessionCookie(token: string) {
-  (await cookies()).set(SESSION_COOKIE_NAME, token, sessionCookieOptions(sessionExpiry()));
+  (await cookies()).set(
+    SESSION_COOKIE_NAME,
+    token,
+    sessionCookieOptions(sessionExpiry()),
+  );
 }
 
 async function clearSessionCookie() {
-  (await cookies()).set(SESSION_COOKIE_NAME, '', sessionCookieOptions(new Date(0)));
+  (await cookies()).set(
+    SESSION_COOKIE_NAME,
+    '',
+    sessionCookieOptions(new Date(0)),
+  );
 }
 
 const authActions = createAuthActions({
@@ -38,8 +51,9 @@ function loginKey(forwardedFor: string | null) {
 
 export async function login(formData: FormData) {
   const requestHeaders = await headers();
-  const forwardedFor = requestHeaders.get('x-vercel-forwarded-for')
-    ?? requestHeaders.get('x-forwarded-for');
+  const forwardedFor =
+    requestHeaders.get('x-vercel-forwarded-for') ??
+    requestHeaders.get('x-forwarded-for');
   const result = await authActions.login(formData, loginKey(forwardedFor));
   after(() => cleanupLoginAttempts());
   return result;

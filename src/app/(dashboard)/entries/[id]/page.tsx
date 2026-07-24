@@ -22,16 +22,19 @@ export function buildEntryDetailViewModel(
     aiStatus: string | null;
     createdAt: Date | null;
   },
-  copy: typeof messages
+  copy: typeof messages,
 ) {
   return {
     ...entry,
     displayTitle: entry.title || copy.editor.untitledCapture,
     summary: entry.aiStatus === 'done' ? entry.summary : null,
     tags: parseStoredTags(entry.tags),
-    statusLabel: entry.aiStatus === 'failed'
-      ? copy.common.failed
-      : entry.aiStatus === 'pending' ? copy.common.processing : null,
+    statusLabel:
+      entry.aiStatus === 'failed'
+        ? copy.common.failed
+        : entry.aiStatus === 'pending'
+          ? copy.common.processing
+          : null,
     statusTone: entry.aiStatus === 'failed' ? 'danger' : 'muted',
     regenerateLabel: copy.entryDetail.regenerateMetadata,
   };
@@ -58,13 +61,21 @@ export default async function EntryDetailPage({
     <div className="mx-auto max-w-3xl space-y-4">
       {entry.aiStatus === 'pending' ? <PendingAIRefresh /> : null}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="icon" asChild className="-ml-2 text-muted hover:text-primary">
+        <Button
+          variant="ghost"
+          size="icon"
+          asChild
+          className="-ml-2 text-muted hover:text-primary"
+        >
           <Link href={dashboardPath()} aria-label={messages.common.timeline}>
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
 
-        <EntryDetailActions entryId={id} pending={entry.aiStatus === 'pending'} />
+        <EntryDetailActions
+          entryId={id}
+          pending={entry.aiStatus === 'pending'}
+        />
       </div>
 
       <article className="rounded-lg border border-border bg-surface">
@@ -76,12 +87,18 @@ export default async function EntryDetailPage({
                 <FormattedDate date={entry.createdAt} />
               </div>
               {viewModel.statusLabel && (
-                <div className={viewModel.statusTone === 'danger'
-                  ? 'flex items-center gap-2 rounded-md border border-danger/20 px-2 py-1 text-danger'
-                  : 'flex items-center gap-2 rounded-md border border-primary/20 px-2 py-1 text-primary'}>
-                  {entry.aiStatus === 'pending'
-                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    : <Sparkles className="h-3.5 w-3.5" />}
+                <div
+                  className={
+                    viewModel.statusTone === 'danger'
+                      ? 'flex items-center gap-2 rounded-md border border-danger/20 px-2 py-1 text-danger'
+                      : 'flex items-center gap-2 rounded-md border border-primary/20 px-2 py-1 text-primary'
+                  }
+                >
+                  {entry.aiStatus === 'pending' ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  )}
                   {viewModel.statusLabel}
                 </div>
               )}
@@ -94,7 +111,9 @@ export default async function EntryDetailPage({
 
               {viewModel.summary && (
                 <div className="border-l-2 border-primary pl-4">
-                  <p className="text-xs font-medium text-primary">{messages.entryDetail.aiSummary}</p>
+                  <p className="text-xs font-medium text-primary">
+                    {messages.entryDetail.aiSummary}
+                  </p>
                   <p className="mt-2 text-sm leading-6 text-muted">
                     {viewModel.summary}
                   </p>

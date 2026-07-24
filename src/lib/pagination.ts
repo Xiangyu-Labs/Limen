@@ -9,17 +9,23 @@ export type EntryCursor = {
 };
 
 export function encodeEntryCursor(cursor: EntryCursor): string {
-  return Buffer.from(JSON.stringify({
-    v: 1,
-    createdAt: cursor.createdAt.toISOString(),
-    id: cursor.id,
-  })).toString('base64url');
+  return Buffer.from(
+    JSON.stringify({
+      v: 1,
+      createdAt: cursor.createdAt.toISOString(),
+      id: cursor.id,
+    }),
+  ).toString('base64url');
 }
 
-export function decodeEntryCursor(value: string | null | undefined): EntryCursor | undefined {
+export function decodeEntryCursor(
+  value: string | null | undefined,
+): EntryCursor | undefined {
   if (!value) return undefined;
   try {
-    const parsed = JSON.parse(Buffer.from(value, 'base64url').toString('utf8')) as Record<string, unknown>;
+    const parsed = JSON.parse(
+      Buffer.from(value, 'base64url').toString('utf8'),
+    ) as Record<string, unknown>;
     const createdAt = new Date(String(parsed.createdAt));
     if (
       parsed.v !== 1 ||

@@ -4,7 +4,10 @@ export function createRequestNonce() {
   return randomBytes(16).toString('base64');
 }
 
-export function buildContentSecurityPolicy(nonce: string, development = process.env.NODE_ENV !== 'production') {
+export function buildContentSecurityPolicy(
+  nonce: string,
+  development = process.env.NODE_ENV !== 'production',
+) {
   const scriptSources = [`'self'`, `'nonce-${nonce}'`, `'strict-dynamic'`];
   if (development) scriptSources.push(`'unsafe-eval'`);
   return [
@@ -22,13 +25,24 @@ export function buildContentSecurityPolicy(nonce: string, development = process.
   ].join('; ');
 }
 
-export function applySecurityHeaders(headers: Headers, contentSecurityPolicy: string, production = process.env.NODE_ENV === 'production') {
+export function applySecurityHeaders(
+  headers: Headers,
+  contentSecurityPolicy: string,
+  production = process.env.NODE_ENV === 'production',
+) {
   headers.set('Content-Security-Policy', contentSecurityPolicy);
   headers.set('Cache-Control', 'private, no-store, max-age=0');
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('X-Frame-Options', 'DENY');
   headers.set('Referrer-Policy', 'no-referrer');
-  headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+  headers.set(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+  );
   headers.set('Cross-Origin-Opener-Policy', 'same-origin');
-  if (production) headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  if (production)
+    headers.set(
+      'Strict-Transport-Security',
+      'max-age=63072000; includeSubDomains; preload',
+    );
 }

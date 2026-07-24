@@ -85,17 +85,16 @@ Each entry exports as:
 title: "entry title or 'Untitled Capture'"
 date: YYYY-MM-DD
 tags: [tag1, tag2]
-summary: "AI-generated summary or empty"
+summary: 'AI-generated summary or empty'
 ---
 
 ## Entry Title (or Untitled Capture)
 
-*YYYY-MM-DD*
+_YYYY-MM-DD_
 
 entry content (Markdown)
 
 ---
-
 ```
 
 The final `---` separator is omitted after the last entry. The file starts with a header block:

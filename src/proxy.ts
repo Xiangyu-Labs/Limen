@@ -22,10 +22,12 @@ type ProxyDecision =
   | { type: 'next' };
 
 export function shouldBypassProxy(pathname: string) {
-  return pathname.startsWith('/_next/static/')
-    || pathname.startsWith('/_next/image/')
-    || pathname === '/favicon.ico'
-    || pathname === '/robots.txt';
+  return (
+    pathname.startsWith('/_next/static/') ||
+    pathname.startsWith('/_next/image/') ||
+    pathname === '/favicon.ico' ||
+    pathname === '/robots.txt'
+  );
 }
 
 export function evaluateProxyRequest({
@@ -43,25 +45,31 @@ export function evaluateProxyRequest({
   }
 
   if (pathname.startsWith('/api')) {
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    const token = authHeader?.startsWith('Bearer ')
+      ? authHeader.slice(7)
+      : undefined;
     return verifyApiToken(token, apiTokenHash)
       ? { type: 'next' }
       : { type: 'json', status: 401, body: { error: 'Unauthorized' } };
   }
 
   const normalizedPath = stripLegacyLocalePath(pathname);
-  if (normalizedPath !== pathname) return { type: 'redirect', location: normalizedPath };
+  if (normalizedPath !== pathname)
+    return { type: 'redirect', location: normalizedPath };
   if (pathname === '/login') {
     return hasSession ? { type: 'redirect', location: '/' } : { type: 'next' };
   }
-  return hasSession ? { type: 'next' } : { type: 'redirect', location: loginPath() };
+  return hasSession
+    ? { type: 'next' }
+    : { type: 'redirect', location: loginPath() };
 }
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   if (shouldBypassProxy(pathname)) return NextResponse.next();
 
-  const needsSession = !pathname.startsWith('/api/') || pathname.startsWith('/api/dashboard');
+  const needsSession =
+    !pathname.startsWith('/api/') || pathname.startsWith('/api/dashboard');
   const decision = evaluateProxyRequest({
     pathname,
     hasSession: needsSession ? Boolean(await getSession()) : false,

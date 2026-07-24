@@ -9,7 +9,13 @@ export function getDefaultCreatedAtValue(now = new Date()) {
   return now.toISOString().slice(0, 10);
 }
 
-export function isEntrySubmitDisabled({ loading, content }: { loading: boolean; content: string }) {
+export function isEntrySubmitDisabled({
+  loading,
+  content,
+}: {
+  loading: boolean;
+  content: string;
+}) {
   return loading || !content.trim();
 }
 
@@ -23,7 +29,10 @@ export default function NewEntryPage() {
           </Link>
         </Button>
       </div>
-      <EntryEditorForm mode="create" initialCreatedAt={getDefaultCreatedAtValue()} />
+      <EntryEditorForm
+        mode="create"
+        initialCreatedAt={getDefaultCreatedAtValue()}
+      />
     </div>
   );
 }

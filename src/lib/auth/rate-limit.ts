@@ -6,22 +6,32 @@ export const LOGIN_WINDOW_MS = 15 * 60 * 1_000;
 export const LOGIN_MAX_FAILURES = 5;
 const ATTEMPT_RETENTION_MS = 7 * 24 * 60 * 60 * 1_000;
 
-export async function getLoginRateLimit(key: string, now = new Date(), database: AppDatabase = db) {
+export async function getLoginRateLimit(
+  key: string,
+  now = new Date(),
+  database: AppDatabase = db,
+) {
   const attempt = await database.query.authAttempts.findFirst({
     where: eq(authAttempts.key, key),
     columns: { blockedUntil: true },
   });
-  const retryAfterMs = attempt?.blockedUntil ? attempt.blockedUntil.getTime() - now.getTime() : 0;
+  const retryAfterMs = attempt?.blockedUntil
+    ? attempt.blockedUntil.getTime() - now.getTime()
+    : 0;
   return {
     blocked: retryAfterMs > 0,
     retryAfterSeconds: retryAfterMs > 0 ? Math.ceil(retryAfterMs / 1_000) : 0,
   };
 }
 
-export async function recordLoginFailure(key: string, now = new Date(), database: AppDatabase = db) {
+export async function recordLoginFailure(
+  key: string,
+  now = new Date(),
+  database: AppDatabase = db,
+) {
   const resetBefore = new Date(now.getTime() - LOGIN_WINDOW_MS);
   const blockUntil = new Date(now.getTime() + LOGIN_WINDOW_MS);
-  const result = await database.execute(sql`
+  const result = (await database.execute(sql`
     INSERT INTO ${authAttempts} (
       "key", "failures", "window_started_at", "blocked_until", "updated_at"
     ) VALUES (${key}, 1, ${now}, NULL, ${now})
@@ -41,22 +51,37 @@ export async function recordLoginFailure(key: string, now = new Date(), database
       END,
       "updated_at" = ${now}
     RETURNING "failures", "blocked_until"
-  `) as unknown as { rows: Array<{ failures: number; blocked_until: Date | string | null }> };
+  `)) as unknown as {
+    rows: Array<{ failures: number; blocked_until: Date | string | null }>;
+  };
   const row = result.rows[0];
   const blockedUntil = row?.blocked_until ? new Date(row.blocked_until) : null;
   return {
     failures: Number(row?.failures ?? 1),
     blocked: Boolean(blockedUntil && blockedUntil > now),
-    retryAfterSeconds: blockedUntil ? Math.max(0, Math.ceil((blockedUntil.getTime() - now.getTime()) / 1_000)) : 0,
+    retryAfterSeconds: blockedUntil
+      ? Math.max(0, Math.ceil((blockedUntil.getTime() - now.getTime()) / 1_000))
+      : 0,
   };
 }
 
-export async function clearLoginFailures(key: string, database: AppDatabase = db) {
+export async function clearLoginFailures(
+  key: string,
+  database: AppDatabase = db,
+) {
   await database.delete(authAttempts).where(eq(authAttempts.key, key));
 }
 
-export async function cleanupLoginAttempts(now = new Date(), database: AppDatabase = db) {
-  await database.delete(authAttempts).where(
-    lt(authAttempts.updatedAt, new Date(now.getTime() - ATTEMPT_RETENTION_MS)),
-  );
+export async function cleanupLoginAttempts(
+  now = new Date(),
+  database: AppDatabase = db,
+) {
+  await database
+    .delete(authAttempts)
+    .where(
+      lt(
+        authAttempts.updatedAt,
+        new Date(now.getTime() - ATTEMPT_RETENTION_MS),
+      ),
+    );
 }

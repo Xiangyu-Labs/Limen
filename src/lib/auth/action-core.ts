@@ -4,7 +4,10 @@ type LoginLimit = { blocked: boolean; retryAfterSeconds: number };
 
 type AuthActionDeps = {
   passwordHash?: string;
-  verifyPassword: (password: unknown, encodedHash: string | undefined) => Promise<boolean>;
+  verifyPassword: (
+    password: unknown,
+    encodedHash: string | undefined,
+  ) => Promise<boolean>;
   getRateLimit: (key: string) => Promise<LoginLimit>;
   recordFailure: (key: string) => Promise<LoginLimit & { failures: number }>;
   clearFailures: (key: string) => Promise<void>;
@@ -29,15 +32,21 @@ export function createAuthActions({
     async login(formData: FormData, clientKey: string): Promise<ActionResult> {
       const limit = await getRateLimit(clientKey);
       if (limit.blocked) {
-        return { ok: false, error: INVALID_LOGIN_MESSAGE, retryAfterSeconds: limit.retryAfterSeconds };
+        return {
+          ok: false,
+          error: INVALID_LOGIN_MESSAGE,
+          retryAfterSeconds: limit.retryAfterSeconds,
+        };
       }
 
-      if (!await verifyPassword(formData.get('password'), passwordHash)) {
+      if (!(await verifyPassword(formData.get('password'), passwordHash))) {
         const failed = await recordFailure(clientKey);
         return {
           ok: false,
           error: INVALID_LOGIN_MESSAGE,
-          retryAfterSeconds: failed.blocked ? failed.retryAfterSeconds : undefined,
+          retryAfterSeconds: failed.blocked
+            ? failed.retryAfterSeconds
+            : undefined,
         };
       }
 

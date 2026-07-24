@@ -1,10 +1,11 @@
-import test from "node:test";
-import assert from "node:assert/strict";
+import test from 'node:test';
+import assert from 'node:assert/strict';
 
-test("redirect helpers generate Chinese-only root routes", async () => {
-  const { dashboardPath, entryDetailPath, loginPath, newEntryPath } = await import("@/lib/pathname");
-  assert.equal(dashboardPath(), "/");
-  assert.equal(loginPath(), "/login");
-  assert.equal(newEntryPath(), "/entries/new");
-  assert.equal(entryDetailPath("entry-1"), "/entries/entry-1");
+test('redirect helpers generate Chinese-only root routes', async () => {
+  const { dashboardPath, entryDetailPath, loginPath, newEntryPath } =
+    await import('@/lib/pathname');
+  assert.equal(dashboardPath(), '/');
+  assert.equal(loginPath(), '/login');
+  assert.equal(newEntryPath(), '/entries/new');
+  assert.equal(entryDetailPath('entry-1'), '/entries/entry-1');
 });
