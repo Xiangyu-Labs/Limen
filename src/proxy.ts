@@ -1,5 +1,4 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { getSession } from '@/lib/auth/session';
 import { loginPath, stripLegacyLocalePath } from '@/lib/pathname';
 import { verifyApiToken } from '@/lib/auth/security';

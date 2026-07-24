@@ -3,10 +3,9 @@ import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LogoutButton } from '@/components/LogoutButton';
 import { messages } from '@/lib/messages';
-import { dashboardPath, newEntryPath } from '@/lib/pathname';
+import { dashboardPath, loginPath, newEntryPath } from '@/lib/pathname';
 import { getSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
-import { loginPath } from '@/lib/pathname';
 
 export const maxDuration = 60;
 export const preferredRegion = 'sin1';
