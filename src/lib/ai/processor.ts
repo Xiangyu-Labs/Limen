@@ -9,16 +9,20 @@ const AI_CHUNK_LENGTH = 30_000;
 const CHUNK_CONCURRENCY = 3;
 const ENTRY_CONCURRENCY = 2;
 
-const aiResponseSchema = z.object({
-  title: z.string().trim().min(1).max(200),
-  summary: z.string().trim().min(1).max(2_000),
-  tags: z.array(z.string()).max(10),
-}).strict();
+const aiResponseSchema = z
+  .object({
+    title: z.string().trim().min(1).max(200),
+    summary: z.string().trim().min(1).max(2_000),
+    tags: z.array(z.string()).max(10),
+  })
+  .strict();
 
 export type AIResponse = z.infer<typeof aiResponseSchema>;
 
 export async function getExistingTags(database: AppDatabase) {
-  const rows = await database.query.entries.findMany({ columns: { tags: true } });
+  const rows = await database.query.entries.findMany({
+    columns: { tags: true },
+  });
   const tags = new Set<string>();
   for (const row of rows) {
     for (const tag of parseStoredTags(row.tags)) tags.add(tag);
@@ -66,7 +70,9 @@ async function mapWithConcurrency<T, R>(
       results[index] = await mapper(values[index], index);
     }
   }
-  await Promise.all(Array.from({ length: Math.min(concurrency, values.length) }, worker));
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, values.length) }, worker),
+  );
   return results;
 }
 
@@ -115,17 +121,21 @@ async function generateMetadata(
 
   const chunks = Array.from(
     { length: Math.ceil(content.length / AI_CHUNK_LENGTH) },
-    (_, index) => content.slice(index * AI_CHUNK_LENGTH, (index + 1) * AI_CHUNK_LENGTH),
+    (_, index) =>
+      content.slice(index * AI_CHUNK_LENGTH, (index + 1) * AI_CHUNK_LENGTH),
   );
-  const partials = await mapWithConcurrency(chunks, CHUNK_CONCURRENCY, (chunk, index) => (
-    requestMetadata(
-      client,
-      model,
-      chunk,
-      existingTags,
-      `这是长篇日记的第 ${index + 1}/${chunks.length} 段，请只概括本段。`,
-    )
-  ));
+  const partials = await mapWithConcurrency(
+    chunks,
+    CHUNK_CONCURRENCY,
+    (chunk, index) =>
+      requestMetadata(
+        client,
+        model,
+        chunk,
+        existingTags,
+        `这是长篇日记的第 ${index + 1}/${chunks.length} 段，请只概括本段。`,
+      ),
+  );
   return requestMetadata(
     client,
     model,
@@ -146,9 +156,10 @@ export function createAIProcessor({
     existingTags?: string[],
   ) {
     try {
-      const tags = existingTags ?? await getExistingTags(database);
+      const tags = existingTags ?? (await getExistingTags(database));
       const aiResult = await generateMetadata(client, model, content, tags);
-      await database.update(entries)
+      await database
+        .update(entries)
         .set({
           title: aiResult.title,
           summary: aiResult.summary,
@@ -159,24 +170,31 @@ export function createAIProcessor({
         .where(eq(entries.id, entryId));
     } catch (error) {
       console.error(`AI processing failed for entry ${entryId}:`, error);
-      await database.update(entries)
+      await database
+        .update(entries)
         .set({ aiStatus: 'failed', updatedAt: new Date() })
         .where(eq(entries.id, entryId));
     }
   };
 }
 
-export async function processAIEntry(entryId: string, content: string, existingTags?: string[]) {
+export async function processAIEntry(
+  entryId: string,
+  content: string,
+  existingTags?: string[],
+) {
   const processor = createAIProcessor({ db, client: createOpenAIClient() });
   return processor(entryId, content, existingTags);
 }
 
-export async function processAIEntries(items: Array<{ id: string; content: string }>) {
+export async function processAIEntries(
+  items: Array<{ id: string; content: string }>,
+) {
   if (items.length === 0) return;
   const client = createOpenAIClient();
   const processor = createAIProcessor({ db, client });
   const tags = await getExistingTags(db);
-  await mapWithConcurrency(items, ENTRY_CONCURRENCY, (item) => (
-    processor(item.id, item.content, tags)
-  ));
+  await mapWithConcurrency(items, ENTRY_CONCURRENCY, (item) =>
+    processor(item.id, item.content, tags),
+  );
 }

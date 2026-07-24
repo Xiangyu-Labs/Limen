@@ -16,5 +16,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <html lang="zh"><body className="antialiased">{children}<AppToaster /></body></html>;
+  return (
+    <html lang="zh">
+      <body className="antialiased">
+        {children}
+        <AppToaster />
+      </body>
+    </html>
+  );
 }

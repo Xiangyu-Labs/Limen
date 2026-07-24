@@ -55,7 +55,10 @@ function SearchForm({
         className="h-10 w-full rounded-md border border-border bg-surface pl-10 pr-12 text-sm text-text placeholder:text-muted/70 focus:outline-none focus:ring-2 focus:ring-ring/40"
       />
       {isPending ? (
-        <Loader2 className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted" aria-label="正在搜索" />
+        <Loader2
+          className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted"
+          aria-label="正在搜索"
+        />
       ) : query ? (
         <button
           type="button"
@@ -73,7 +76,13 @@ function SearchForm({
   );
 }
 
-export function SearchInput({ placeholder = '搜索', className = '' }: { placeholder?: string; className?: string }) {
+export function SearchInput({
+  placeholder = '搜索',
+  className = '',
+}: {
+  placeholder?: string;
+  className?: string;
+}) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const query = searchParams.get('q') || '';

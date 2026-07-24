@@ -42,7 +42,9 @@ export type TimelineEntriesPage = {
   pageInfo: DashboardEntriesPage['pageInfo'];
 };
 
-export function buildTimelineEntriesPage(page: DashboardEntriesPage): TimelineEntriesPage {
+export function buildTimelineEntriesPage(
+  page: DashboardEntriesPage,
+): TimelineEntriesPage {
   return {
     pageInfo: page.pageInfo,
     items: page.items.map((entry) => ({
@@ -50,9 +52,12 @@ export function buildTimelineEntriesPage(page: DashboardEntriesPage): TimelineEn
       displayTitle: entry.title || messages.dashboard.untitledEntry,
       displaySummary: entry.preview,
       tags: parseStoredTags(entry.tags),
-      statusLabel: entry.aiStatus === 'failed'
-        ? messages.common.failed
-        : entry.aiStatus === 'pending' ? messages.common.processing : null,
+      statusLabel:
+        entry.aiStatus === 'failed'
+          ? messages.common.failed
+          : entry.aiStatus === 'pending'
+            ? messages.common.processing
+            : null,
       statusTone: entry.aiStatus === 'failed' ? 'danger' : 'muted',
       createdAt: entry.createdAt.toISOString(),
       isPending: entry.aiStatus === 'pending',
@@ -61,7 +66,10 @@ export function buildTimelineEntriesPage(page: DashboardEntriesPage): TimelineEn
 }
 
 function escapeLikePattern(value: string) {
-  return value.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_');
+  return value
+    .replaceAll('\\', '\\\\')
+    .replaceAll('%', '\\%')
+    .replaceAll('_', '\\_');
 }
 
 function buildEntryWhere(q?: string, cursorValue?: string): SQL | undefined {
@@ -69,11 +77,13 @@ function buildEntryWhere(q?: string, cursorValue?: string): SQL | undefined {
   const query = normalizeSearchQuery(q);
   if (query) {
     const pattern = `%${escapeLikePattern(query)}%`;
-    conditions.push(or(
-      ilike(entries.content, pattern),
-      ilike(entries.title, pattern),
-      ilike(entries.summary, pattern),
-    ) as SQL);
+    conditions.push(
+      or(
+        ilike(entries.content, pattern),
+        ilike(entries.title, pattern),
+        ilike(entries.summary, pattern),
+      ) as SQL,
+    );
   }
 
   const cursor = decodeEntryCursor(cursorValue);
@@ -88,23 +98,28 @@ function buildEntryWhere(q?: string, cursorValue?: string): SQL | undefined {
   return conditions.length > 0 ? and(...conditions) : undefined;
 }
 
-export async function loadDashboardEntriesPage({
-  q,
-  cursor,
-  limit = 20,
-}: {
-  q?: string;
-  cursor?: string;
-  limit?: number;
-}, database: AppDatabase = db): Promise<DashboardEntriesPage> {
-  const rows = await database.select({
-    id: entries.id,
-    title: entries.title,
-    preview: sql<string>`left(coalesce(${entries.summary}, ${entries.content}), ${DASHBOARD_PREVIEW_LENGTH})`,
-    tags: entries.tags,
-    aiStatus: entries.aiStatus,
-    createdAt: entries.createdAt,
-  }).from(entries)
+export async function loadDashboardEntriesPage(
+  {
+    q,
+    cursor,
+    limit = 20,
+  }: {
+    q?: string;
+    cursor?: string;
+    limit?: number;
+  },
+  database: AppDatabase = db,
+): Promise<DashboardEntriesPage> {
+  const rows = await database
+    .select({
+      id: entries.id,
+      title: entries.title,
+      preview: sql<string>`left(coalesce(${entries.summary}, ${entries.content}), ${DASHBOARD_PREVIEW_LENGTH})`,
+      tags: entries.tags,
+      aiStatus: entries.aiStatus,
+      createdAt: entries.createdAt,
+    })
+    .from(entries)
     .where(buildEntryWhere(q, cursor))
     .orderBy(desc(entries.createdAt), desc(entries.id))
     .limit(limit + 1);
@@ -117,21 +132,27 @@ export async function loadDashboardEntriesPage({
     pageInfo: {
       hasMore,
       limit,
-      nextCursor: hasMore && last
-        ? encodeEntryCursor({ createdAt: last.createdAt, id: last.id })
-        : null,
+      nextCursor:
+        hasMore && last
+          ? encodeEntryCursor({ createdAt: last.createdAt, id: last.id })
+          : null,
     },
   };
 }
 
-export async function loadApiEntriesPage({
-  cursor,
-  limit,
-}: {
-  cursor?: string;
-  limit: number;
-}, database: AppDatabase = db) {
-  const rows = await database.select().from(entries)
+export async function loadApiEntriesPage(
+  {
+    cursor,
+    limit,
+  }: {
+    cursor?: string;
+    limit: number;
+  },
+  database: AppDatabase = db,
+) {
+  const rows = await database
+    .select()
+    .from(entries)
     .where(buildEntryWhere(undefined, cursor))
     .orderBy(desc(entries.createdAt), desc(entries.id))
     .limit(limit + 1);
@@ -143,9 +164,10 @@ export async function loadApiEntriesPage({
     pageInfo: {
       hasMore,
       limit,
-      nextCursor: hasMore && last
-        ? encodeEntryCursor({ createdAt: last.createdAt, id: last.id })
-        : null,
+      nextCursor:
+        hasMore && last
+          ? encodeEntryCursor({ createdAt: last.createdAt, id: last.id })
+          : null,
     },
   };
 }

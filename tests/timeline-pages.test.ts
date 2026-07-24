@@ -20,5 +20,10 @@ function page(ids: string[]): TimelineEntriesPage {
 }
 
 test('timeline page merging preserves order and removes duplicates', () => {
-  assert.deepEqual(mergeTimelinePages([page(['3', '2']), page(['2', '1'])]).map((entry) => entry.id), ['3', '2', '1']);
+  assert.deepEqual(
+    mergeTimelinePages([page(['3', '2']), page(['2', '1'])]).map(
+      (entry) => entry.id,
+    ),
+    ['3', '2', '1'],
+  );
 });

@@ -47,7 +47,10 @@ export default async function EditEntryPage({
     <div className="mx-auto max-w-3xl space-y-3">
       <div className="flex items-center">
         <Button variant="ghost" size="icon" asChild className="-ml-2">
-          <Link href={entryDetailPath(id)} aria-label={messages.common.timeline}>
+          <Link
+            href={entryDetailPath(id)}
+            aria-label={messages.common.timeline}
+          >
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>

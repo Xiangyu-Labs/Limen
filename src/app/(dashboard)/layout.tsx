@@ -3,10 +3,9 @@ import { PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LogoutButton } from '@/components/LogoutButton';
 import { messages } from '@/lib/messages';
-import { dashboardPath, newEntryPath } from '@/lib/pathname';
+import { dashboardPath, loginPath, newEntryPath } from '@/lib/pathname';
 import { getSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
-import { loginPath } from '@/lib/pathname';
 
 export const maxDuration = 60;
 export const preferredRegion = 'sin1';
@@ -18,7 +17,7 @@ export default async function DashboardLayout({
   children: React.ReactNode;
   navControls: React.ReactNode;
 }) {
-  if (!await getSession()) redirect(loginPath());
+  if (!(await getSession())) redirect(loginPath());
   return (
     <div className="flex min-h-screen flex-col bg-bg">
       <header className="sticky top-0 z-10 border-b border-border bg-surface/95 backdrop-blur">
@@ -51,7 +50,9 @@ export default async function DashboardLayout({
       </header>
 
       <main className="flex-1">
-        <div className="mx-auto max-w-5xl px-4 py-6 md:px-6 md:py-8">{children}</div>
+        <div className="mx-auto max-w-5xl px-4 py-6 md:px-6 md:py-8">
+          {children}
+        </div>
       </main>
     </div>
   );

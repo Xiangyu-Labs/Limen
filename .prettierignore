@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.*
+
+# Build output
+.next/
+out/
+dist/
+build/
+.turbo/
+coverage/
+next-env.d.ts
+
+# Local data and databases
+data/
+*.db
+*.db-journal
+*.db-bak
+*.db-shm
+*.db-wal
+
+# Environment files
+.env
+.env.local
+.env.*
+!.env.example
+
+# Lockfile
+package-lock.json
+
+# Generated Drizzle SQL and snapshot metadata
+drizzle/
+
+# Internal workflow artifacts
+.formless/
+
+# Logs
+*.log

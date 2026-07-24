@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -21,7 +21,7 @@
   --radius-xl: var(--radius-xl);
 
   --font-sans: Inter, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
 
   --shadow-sm: none;
   --shadow-md: none;

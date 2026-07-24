@@ -26,5 +26,6 @@ export async function updateEntry(id: string, formData: FormData) {
   return entryActions.updateEntry(id, formData);
 }
 export const regenerateEntryMetadata = entryActions.regenerateEntryMetadata;
-export const bulkRegenerateEntryMetadata = entryActions.bulkRegenerateEntryMetadata;
+export const bulkRegenerateEntryMetadata =
+  entryActions.bulkRegenerateEntryMetadata;
 export const bulkDeleteEntries = entryActions.bulkDeleteEntries;

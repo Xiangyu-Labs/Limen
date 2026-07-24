@@ -17,12 +17,16 @@ test('session manager rejects weak secrets and invalid cookies', async () => {
   const { createSessionManager } = await import('@/lib/auth/session');
   assert.throws(() => createSessionManager('too-short'), /32 bytes/);
   const manager = createSessionManager(SECRET);
-  assert.equal(await manager.getSession({ get: () => ({ value: 'invalid' }) }), null);
+  assert.equal(
+    await manager.getSession({ get: () => ({ value: 'invalid' }) }),
+    null,
+  );
   assert.equal(await manager.getSession({ get: () => undefined }), null);
 });
 
 test('session cookies use strict production-oriented attributes', async () => {
-  const { sessionCookieOptions, SESSION_DURATION_SECONDS } = await import('@/lib/auth/session');
+  const { sessionCookieOptions, SESSION_DURATION_SECONDS } =
+    await import('@/lib/auth/session');
   const expires = new Date('2024-02-01T00:00:00.000Z');
   const options = sessionCookieOptions(expires);
   assert.equal(options.httpOnly, true);

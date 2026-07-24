@@ -6,9 +6,10 @@ const SESSION_ISSUER = 'limen';
 const SESSION_AUDIENCE = 'limen-web';
 const SESSION_SUBJECT = 'owner';
 export const SESSION_DURATION_SECONDS = 7 * 24 * 60 * 60;
-export const SESSION_COOKIE_NAME = process.env.NODE_ENV === 'production'
-  ? '__Host-limen-session'
-  : 'limen-session';
+export const SESSION_COOKIE_NAME =
+  process.env.NODE_ENV === 'production'
+    ? '__Host-limen-session'
+    : 'limen-session';
 
 type CookieStore = {
   get: (name: string) => { value?: string } | undefined;

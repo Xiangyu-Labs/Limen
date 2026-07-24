@@ -43,10 +43,18 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg p-6">
-      <form method="post" onSubmit={submit} className="w-full max-w-xs space-y-5">
-        <h1 className="text-center text-2xl font-semibold tracking-tight text-text">Limen</h1>
+      <form
+        method="post"
+        onSubmit={submit}
+        className="w-full max-w-xs space-y-5"
+      >
+        <h1 className="text-center text-2xl font-semibold tracking-tight text-text">
+          Limen
+        </h1>
         <div>
-          <label htmlFor="login-password" className="sr-only">{messages.login.password}</label>
+          <label htmlFor="login-password" className="sr-only">
+            {messages.login.password}
+          </label>
           <Input
             id="login-password"
             name="password"
@@ -62,7 +70,10 @@ export default function LoginPage() {
           />
         </div>
         {error ? (
-          <div role="alert" className="rounded-md bg-danger/10 px-3 py-2 text-center text-sm text-danger">
+          <div
+            role="alert"
+            className="rounded-md bg-danger/10 px-3 py-2 text-center text-sm text-danger"
+          >
             {error}
           </div>
         ) : null}

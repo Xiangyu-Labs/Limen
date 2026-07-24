@@ -9,7 +9,7 @@ export const preferredRegion = 'sin1';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   if (!hasValidBearerToken(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -28,13 +28,16 @@ export async function GET(
     return NextResponse.json(entry);
   } catch (error) {
     console.error(`Error fetching entry ${id}:`, error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
+      { status: 500 },
+    );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   if (!hasValidBearerToken(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -42,7 +45,10 @@ export async function DELETE(
   const { id } = await params;
 
   try {
-    const result = await db.delete(entries).where(eq(entries.id, id)).returning();
+    const result = await db
+      .delete(entries)
+      .where(eq(entries.id, id))
+      .returning();
 
     if (result.length === 0) {
       return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
@@ -51,6 +57,9 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error(`Error deleting entry ${id}:`, error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
+      { status: 500 },
+    );
   }
 }

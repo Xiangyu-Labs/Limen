@@ -1,4 +1,10 @@
-import { createHash, createHmac, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
+import {
+  createHash,
+  createHmac,
+  randomBytes,
+  scrypt,
+  timingSafeEqual,
+} from 'node:crypto';
 
 const SCRYPT_N = 32_768;
 const SCRYPT_R = 8;
@@ -14,21 +20,32 @@ function constantTimeBufferEqual(left: Buffer, right: Buffer) {
 
 function deriveScrypt(password: string, salt: Buffer) {
   return new Promise<Buffer>((resolve, reject) => {
-    scrypt(password, salt, SCRYPT_KEY_LENGTH, {
-      N: SCRYPT_N,
-      r: SCRYPT_R,
-      p: SCRYPT_P,
-      maxmem: SCRYPT_MAX_MEMORY,
-    }, (error, key) => {
-      if (error) reject(error);
-      else resolve(key);
-    });
+    scrypt(
+      password,
+      salt,
+      SCRYPT_KEY_LENGTH,
+      {
+        N: SCRYPT_N,
+        r: SCRYPT_R,
+        p: SCRYPT_P,
+        maxmem: SCRYPT_MAX_MEMORY,
+      },
+      (error, key) => {
+        if (error) reject(error);
+        else resolve(key);
+      },
+    );
   });
 }
 
 export function validatePassword(password: string) {
-  if (password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
-    throw new Error(`Password must contain ${MIN_PASSWORD_LENGTH}-${MAX_PASSWORD_LENGTH} characters`);
+  if (
+    password.length < MIN_PASSWORD_LENGTH ||
+    password.length > MAX_PASSWORD_LENGTH
+  ) {
+    throw new Error(
+      `Password must contain ${MIN_PASSWORD_LENGTH}-${MAX_PASSWORD_LENGTH} characters`,
+    );
   }
 }
 
@@ -45,28 +62,38 @@ export async function hashPassword(password: string, salt = randomBytes(16)) {
   ].join('$');
 }
 
-export async function verifyPassword(password: unknown, encodedHash: string | undefined) {
+export async function verifyPassword(
+  password: unknown,
+  encodedHash: string | undefined,
+) {
   if (
-    typeof password !== 'string'
-    || password.length < MIN_PASSWORD_LENGTH
-    || password.length > MAX_PASSWORD_LENGTH
-    || !encodedHash
-  ) return false;
+    typeof password !== 'string' ||
+    password.length < MIN_PASSWORD_LENGTH ||
+    password.length > MAX_PASSWORD_LENGTH ||
+    !encodedHash
+  )
+    return false;
   try {
-    const [algorithm, n, r, p, encodedSalt, encodedKey, extra] = encodedHash.split('$');
+    const [algorithm, n, r, p, encodedSalt, encodedKey, extra] =
+      encodedHash.split('$');
     if (
-      algorithm !== 'scrypt'
-      || Number(n) !== SCRYPT_N
-      || Number(r) !== SCRYPT_R
-      || Number(p) !== SCRYPT_P
-      || !encodedSalt
-      || !encodedKey
-      || extra !== undefined
-    ) return false;
+      algorithm !== 'scrypt' ||
+      Number(n) !== SCRYPT_N ||
+      Number(r) !== SCRYPT_R ||
+      Number(p) !== SCRYPT_P ||
+      !encodedSalt ||
+      !encodedKey ||
+      extra !== undefined
+    )
+      return false;
     const salt = Buffer.from(encodedSalt, 'base64url');
     const expected = Buffer.from(encodedKey, 'base64url');
-    if (salt.length !== 16 || expected.length !== SCRYPT_KEY_LENGTH) return false;
-    return constantTimeBufferEqual(await deriveScrypt(password, salt), expected);
+    if (salt.length !== 16 || expected.length !== SCRYPT_KEY_LENGTH)
+      return false;
+    return constantTimeBufferEqual(
+      await deriveScrypt(password, salt),
+      expected,
+    );
   } catch {
     return false;
   }
@@ -81,20 +108,34 @@ export function generateApiToken() {
   return { token, hash: hashApiToken(token) };
 }
 
-export function verifyApiToken(token: unknown, encodedHash: string | undefined) {
-  if (typeof token !== 'string' || !encodedHash?.startsWith('sha256$')) return false;
-  const expected = Buffer.from(encodedHash.slice('sha256$'.length), 'base64url');
+export function verifyApiToken(
+  token: unknown,
+  encodedHash: string | undefined,
+) {
+  if (typeof token !== 'string' || !encodedHash?.startsWith('sha256$'))
+    return false;
+  const expected = Buffer.from(
+    encodedHash.slice('sha256$'.length),
+    'base64url',
+  );
   const actual = createHash('sha256').update(token).digest();
   return expected.length === 32 && constantTimeBufferEqual(actual, expected);
 }
 
-export function hasValidBearerToken(request: Request, expectedHash = process.env.API_TOKEN_HASH) {
+export function hasValidBearerToken(
+  request: Request,
+  expectedHash = process.env.API_TOKEN_HASH,
+) {
   const header = request.headers.get('authorization');
   if (!header?.startsWith('Bearer ')) return false;
   return verifyApiToken(header.slice(7), expectedHash);
 }
 
-export function createLoginAttemptKey(forwardedFor: string | null, secret: string) {
-  const clientAddress = forwardedFor?.split(',')[0]?.trim().slice(0, 128) || 'unknown';
+export function createLoginAttemptKey(
+  forwardedFor: string | null,
+  secret: string,
+) {
+  const clientAddress =
+    forwardedFor?.split(',')[0]?.trim().slice(0, 128) || 'unknown';
   return createHmac('sha256', secret).update(clientAddress).digest('base64url');
 }

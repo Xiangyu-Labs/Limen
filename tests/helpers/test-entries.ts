@@ -1,4 +1,4 @@
-import { entries } from "@/lib/db/schema";
+import { entries } from '@/lib/db/schema';
 
 type TestDb = {
   insert: (table: typeof entries) => {
@@ -12,13 +12,13 @@ export async function seedEntry(
 ) {
   const now = new Date();
   const entry: typeof entries.$inferInsert = {
-    id: value.id ?? "entry-1",
-    content: value.content ?? "Seeded entry content",
+    id: value.id ?? 'entry-1',
+    content: value.content ?? 'Seeded entry content',
     title: value.title ?? null,
     summary: value.summary ?? null,
     tags: value.tags ?? null,
-    source: value.source ?? "web",
-    aiStatus: value.aiStatus ?? "pending",
+    source: value.source ?? 'web',
+    aiStatus: value.aiStatus ?? 'pending',
     createdAt: value.createdAt ?? now,
     updatedAt: value.updatedAt ?? now,
   };
