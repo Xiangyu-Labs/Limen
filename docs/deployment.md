@@ -49,14 +49,14 @@ Vercel 的 Build and Output Settings 使用以下默认设置即可：
 | `API_TOKEN_HASH`     | 是   | API Token 的 sha256 哈希，运行 `npm run auth:generate-api-token` 生成 |
 | `SESSION_SECRET`     | 是   | 会话加密密钥，至少 32 字节高熵随机值，例如 `openssl rand -base64 32`  |
 | `AI_API_KEY`         | 是   | OpenAI API Key                                                        |
-| `AI_BASE_URL`        | 是   | OpenAI API 基础 URL，默认 `https://api.openai.com/v1`                 |
-| `AI_MODEL`           | 是   | AI 模型名称，默认 `gpt-4o-mini`                                       |
 
 **可选变量:**
 
 | 变量                  | 说明                                                                                                                        |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `ALLOWED_DEV_ORIGINS` | 仅用于本地开发，配置允许跨域访问的开发地址。取值以逗号分隔（如 `localhost,dev.example.test`）。在生产环境（Vercel）无需配置 |
+| `AI_BASE_URL`         | OpenAI API 基础 URL，默认 `https://api.openai.com/v1`                                                                       |
+| `AI_MODEL`            | AI 模型名称，默认 `gpt-4o-mini`                                                                                             |
 
 请参考 `.env.example` 获取完整的变量格式说明。
 
@@ -129,7 +129,7 @@ curl "https://your-app.vercel.app/api/entries?limit=5" \
   -H "Authorization: Bearer <token>"
 
 # 获取详情
-curl https://your-app.vercel.app/api/entries/<id> \
+curl "https://your-app.vercel.app/api/entries/<id>" \
   -H "Authorization: Bearer <token>"
 ```
 
