@@ -54,9 +54,9 @@ Vercel 的 Build and Output Settings 使用以下默认设置即可：
 
 **可选变量:**
 
-| 变量                  | 说明                                                                                                                     |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `ALLOWED_DEV_ORIGINS` | 仅用于本地开发，配置允许跨域访问的开发地址。取值以逗号分隔（如 `localhost,192.168.1.100`）。在生产环境（Vercel）无需配置 |
+| 变量                  | 说明                                                                                                                        |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `ALLOWED_DEV_ORIGINS` | 仅用于本地开发，配置允许跨域访问的开发地址。取值以逗号分隔（如 `localhost,dev.example.test`）。在生产环境（Vercel）无需配置 |
 
 请参考 `.env.example` 获取完整的变量格式说明。
 
@@ -125,7 +125,7 @@ curl -X POST https://your-app.vercel.app/api/entries \
   -d '{"content":"测试条目内容","createdAt":"2026-07-24"}'
 
 # 列条目
-curl https://your-app.vercel.app/api/entries?limit=5 \
+curl "https://your-app.vercel.app/api/entries?limit=5" \
   -H "Authorization: Bearer <token>"
 
 # 获取详情
@@ -144,5 +144,5 @@ curl https://your-app.vercel.app/api/entries/<id> \
 
 - 本应用为**单用户设计**，API 无用户层级权限控制
 - `AUTH_PASSWORD_HASH`、`API_TOKEN_HASH`、`SESSION_SECRET` 视为敏感信息
-- 部署后应验证安全响应头和非ce CSP 是否正常工作
+- 部署后应验证安全响应头和 nonce CSP 是否正常工作
 - 建议定期轮换 API Token 和 SESSION_SECRET
