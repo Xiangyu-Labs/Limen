@@ -59,7 +59,9 @@ export default async function EntryDetailPage({
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      {entry.aiStatus === 'pending' ? <PendingAIRefresh /> : null}
+      {entry.aiStatus === 'pending' ? (
+        <PendingAIRefresh entryId={entry.id} />
+      ) : null}
       <div className="flex items-center justify-between">
         <Button
           variant="ghost"
