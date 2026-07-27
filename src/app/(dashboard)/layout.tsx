@@ -1,10 +1,16 @@
 import Link from 'next/link';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LogoutButton } from '@/components/LogoutButton';
 import { messages } from '@/lib/messages';
-import { dashboardPath, loginPath, newEntryPath } from '@/lib/pathname';
+import {
+  dashboardPath,
+  loginPath,
+  newEntryPath,
+  settingsPath,
+} from '@/lib/pathname';
 import { getSession } from '@/lib/auth/session';
+import { getSettings } from '@/lib/settings';
 import { redirect } from 'next/navigation';
 
 export const maxDuration = 60;
@@ -17,9 +23,16 @@ export default async function DashboardLayout({
   children: React.ReactNode;
   navControls: React.ReactNode;
 }) {
-  if (!(await getSession())) redirect(loginPath());
+  const [session, appSettings] = await Promise.all([
+    getSession(),
+    getSettings(),
+  ]);
+  if (!session) redirect(loginPath());
   return (
-    <div className="flex min-h-screen flex-col bg-bg">
+    <div
+      data-theme={appSettings.theme}
+      className="flex min-h-screen flex-col bg-bg text-text"
+    >
       <header className="sticky top-0 z-10 border-b border-border bg-surface/95 backdrop-blur">
         <div className="mx-auto max-w-5xl px-4 py-3 md:px-6">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 md:flex">
@@ -39,6 +52,11 @@ export default async function DashboardLayout({
             )}
 
             <div className="flex shrink-0 items-center gap-2">
+              <Button variant="ghost" size="icon" asChild>
+                <Link href={settingsPath()} aria-label="设置" title="设置">
+                  <Settings className="h-4 w-4" />
+                </Link>
+              </Button>
               <Button asChild size="sm" className="h-10 px-3 md:px-4">
                 <Link href={newEntryPath()}>
                   <PlusCircle className="h-4 w-4" />
