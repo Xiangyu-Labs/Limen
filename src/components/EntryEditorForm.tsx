@@ -29,6 +29,8 @@ import {
   parseEntryDraft,
   serializeEntryDraft,
 } from '@/lib/entry-draft';
+import type { EditorFontSize } from '@/lib/settings-core';
+import { cn } from '@/lib/utils';
 
 const DRAFT_SAVE_DELAY_MS = 500;
 const DRAFT_STORAGE_ERROR = '__limen_draft_storage_error__';
@@ -42,11 +44,13 @@ export function EntryEditorForm({
   entryId,
   initialContent = '',
   initialCreatedAt,
+  editorFontSize = 'medium',
 }: {
   mode: 'create' | 'edit';
   entryId?: string;
   initialContent?: string;
   initialCreatedAt: string;
+  editorFontSize?: EditorFontSize;
 }) {
   const router = useRouter();
   const [contentOverride, setContentOverride] = useState<string>();
@@ -248,7 +252,12 @@ export function EntryEditorForm({
           placeholder={
             mode === 'create' ? messages.editor.contentPlaceholder : undefined
           }
-          className="flex-1 resize-none border-0 bg-transparent p-4 text-lg leading-8 focus-visible:ring-0 md:p-6"
+          className={cn(
+            'flex-1 resize-none border-0 bg-transparent p-4 leading-8 focus-visible:ring-0 md:p-6',
+            editorFontSize === 'small' && 'text-base',
+            editorFontSize === 'medium' && 'text-lg',
+            editorFontSize === 'large' && 'text-xl',
+          )}
           autoFocus={mode === 'create'}
           disabled={isPending}
         />

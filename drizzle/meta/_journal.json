@@ -22,6 +22,13 @@
       "when": 1785131907487,
       "tag": "0002_lush_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785142674739,
+      "tag": "0003_soft_lady_ursula",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,5 @@
 import {
+  check,
   date,
   index,
   integer,
@@ -6,6 +7,7 @@ import {
   text,
   timestamp,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { normalizeToUtcDay } from '@/lib/entry-date';
 
@@ -63,4 +65,37 @@ export const authAttempts = pgTable(
     }).notNull(),
   },
   (table) => [index('auth_attempts_updated_at_idx').on(table.updatedAt)],
+);
+
+export const settings = pgTable(
+  'settings',
+  {
+    ownerId: text('owner_id').primaryKey(),
+    theme: text('theme').notNull().default('system'),
+    timeZone: text('time_zone').notNull().default('Asia/Shanghai'),
+    editorFontSize: text('editor_font_size').notNull().default('medium'),
+    defaultExportFormat: text('default_export_format')
+      .notNull()
+      .default('markdown'),
+    updatedAt: timestamp('updated_at', {
+      withTimezone: true,
+      mode: 'date',
+    })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      'settings_theme_check',
+      sql`${table.theme} IN ('system', 'light', 'dark')`,
+    ),
+    check(
+      'settings_editor_font_size_check',
+      sql`${table.editorFontSize} IN ('small', 'medium', 'large')`,
+    ),
+    check(
+      'settings_default_export_format_check',
+      sql`${table.defaultExportFormat} IN ('markdown', 'json')`,
+    ),
+  ],
 );

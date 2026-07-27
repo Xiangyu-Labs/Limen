@@ -9,6 +9,7 @@ import { EntryEditorForm } from '@/components/EntryEditorForm';
 import { messages } from '@/lib/messages';
 import { entryDetailPath } from '@/lib/pathname';
 import { formatEntryDateForInput } from '@/lib/entry-date';
+import { getSettings } from '@/lib/settings';
 
 export function formatEntryDateForEditInput(date: Date | null) {
   return formatEntryDateForInput(date);
@@ -31,11 +32,13 @@ export default async function EditEntryPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const settingsPromise = getSettings();
   const { id } = await params;
 
-  const entry = await db.query.entries.findFirst({
-    where: eq(entries.id, id),
-  });
+  const [entry, settings] = await Promise.all([
+    db.query.entries.findFirst({ where: eq(entries.id, id) }),
+    settingsPromise,
+  ]);
 
   if (!entry) {
     notFound();
@@ -61,6 +64,7 @@ export default async function EditEntryPage({
         entryId={id}
         initialContent={model.content}
         initialCreatedAt={model.createdAt}
+        editorFontSize={settings.editorFontSize}
       />
     </div>
   );

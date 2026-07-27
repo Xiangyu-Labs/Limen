@@ -59,6 +59,38 @@
   --warning-a10: color-mix(in srgb, var(--warning), transparent 90%);
 }
 
+[data-theme='dark'] {
+  color-scheme: dark;
+  --primary: #58a77e;
+  --bg: #161816;
+  --surface: #1d201d;
+  --surface2: #292d29;
+  --text: #e8ebe7;
+  --muted: #a6ada5;
+  --border: #383d38;
+  --ring: #69b58c;
+  --danger: #ef7c72;
+  --warning: #e5a452;
+  --info: #80acd5;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme='system'] {
+    color-scheme: dark;
+    --primary: #58a77e;
+    --bg: #161816;
+    --surface: #1d201d;
+    --surface2: #292d29;
+    --text: #e8ebe7;
+    --muted: #a6ada5;
+    --border: #383d38;
+    --ring: #69b58c;
+    --danger: #ef7c72;
+    --warning: #e5a452;
+    --info: #80acd5;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

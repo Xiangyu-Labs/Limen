@@ -18,6 +18,10 @@ export function newEntryPath() {
   return '/entries/new';
 }
 
+export function settingsPath() {
+  return '/settings';
+}
+
 export function stripLegacyLocalePath(pathname: string) {
   if (pathname === '/zh' || pathname === '/en') return '/';
   if (pathname.startsWith('/zh/')) return pathname.slice(3);
