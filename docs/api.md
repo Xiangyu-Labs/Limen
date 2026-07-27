@@ -2,17 +2,17 @@
 
 Limen 提供两类 API：
 
-- **Bearer Token API**: 用于快捷指令、脚本等外部客户端。所有端点需在 `Authorization` 请求头中携带独立 API Token。
+- **Bearer Token API**: 用于快捷指令、脚本等外部客户端。所有端点需在 `Authorization` 请求头中携带 `AUTH_PASSWORD`。
 - **Session API**: 用于 Web 前端，基于浏览器会话。不需要携带 Token。
 
 ## 认证
 
 ### Bearer Token
 
-所有条目 API 端点均要求 `Authorization: Bearer <token>` 请求头，其中 `<token>` 是运行 `npm run auth:generate-api-token` 生成的原始 Token。
+所有条目 API 端点均要求 `Authorization: Bearer <password>` 请求头，其中 `<password>` 与 Web 登录使用的明文 `AUTH_PASSWORD` 完全相同。
 
 ```bash
-curl -H "Authorization: Bearer <token>" <url>
+curl -H "Authorization: Bearer <AUTH_PASSWORD>" <url>
 ```
 
 如果 Token 缺失或无效，返回 `401`：
@@ -21,20 +21,7 @@ curl -H "Authorization: Bearer <token>" <url>
 { "error": "Unauthorized" }
 ```
 
-### 生成 Token
-
-```bash
-npm run auth:generate-api-token
-```
-
-该命令输出原始 Token 和哈希：
-
-```
-API_TOKEN=<原始 Token，仅显示一次>
-API_TOKEN_HASH=<sha256 哈希，写入服务端配置>
-```
-
-将原始 Token 保存到密码管理器，将哈希值配置为 `API_TOKEN_HASH` 环境变量。
+服务端只需配置一个明文 `AUTH_PASSWORD` 环境变量，不使用密码哈希、独立 API Token 或独立 Session Secret。
 
 ## 条目 API
 
@@ -67,6 +54,8 @@ API_TOKEN_HASH=<sha256 哈希，写入服务端配置>
   "aiStatus": "pending"
 }
 ```
+
+响应同时包含 `Location: /api/entries/<id>`。只有收到 HTTP 201、`status` 为 `created` 且 `id` 非空，才表示数据库已经确认写入。
 
 AI 处理在后台异步进行。可通过 GET 获取详情检查 `aiStatus` 变化。
 
@@ -115,7 +104,7 @@ cursor 分页获取条目列表。
 }
 ```
 
-- 按 `createdAt` 降序、`id` 降序排列
+- 按 `createdAt`、实际录入时间、`id` 依次降序排列；同一天最后录入的日记最先显示
 - 当 `hasMore` 为 `true` 时，将 `nextCursor` 原样传入下一次请求
 - 旧版 `offset` 参数不再支持
 
@@ -237,9 +226,11 @@ Web 前端使用的端点，基于浏览器会话认证，而非 Bearer Token。
 使用 Bearer Token 从快捷指令等外部客户端调用时：
 
 - 使用 `POST` 方法和 `Content-Type: application/json`
-- 使用 `Authorization: Bearer <token>`
+- 使用 `Authorization: Bearer <AUTH_PASSWORD>`
 - 只在响应 JSON 的 `status` 等于 `created` 且 `id` 非空时提示成功
-- 不要以"URL 的内容有任何值"判断成功，因为错误响应也有 JSON 内容
+- 同时检查 HTTP 状态码必须为 `201`；不要以“URL 的内容有任何值”判断成功，因为错误响应也有 JSON 内容
+- 在确认成功前保留原始正文；失败时显示状态码和服务端 `error`，不要清空输入或剪贴板
+- 如需二次确认，可使用返回的 `id` 请求 `GET /api/entries/<id>`
 - 原始 Token 生成后仅显示一次，存入密码管理器
 
 ## 通用错误

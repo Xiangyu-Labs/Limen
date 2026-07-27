@@ -60,8 +60,6 @@ export default function LoginPage() {
             name="password"
             type="password"
             required
-            minLength={14}
-            maxLength={128}
             autoComplete="current-password"
             autoFocus
             disabled={isPending}

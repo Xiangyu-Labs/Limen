@@ -3,10 +3,10 @@ import type { ActionResult } from '@/lib/actions/result';
 type LoginLimit = { blocked: boolean; retryAfterSeconds: number };
 
 type AuthActionDeps = {
-  passwordHash?: string;
+  password?: string;
   verifyPassword: (
     password: unknown,
-    encodedHash: string | undefined,
+    expectedPassword: string | undefined,
   ) => Promise<boolean>;
   getRateLimit: (key: string) => Promise<LoginLimit>;
   recordFailure: (key: string) => Promise<LoginLimit & { failures: number }>;
@@ -19,7 +19,7 @@ type AuthActionDeps = {
 const INVALID_LOGIN_MESSAGE = '密码错误或请求过于频繁';
 
 export function createAuthActions({
-  passwordHash = process.env.AUTH_PASSWORD_HASH,
+  password = process.env.AUTH_PASSWORD,
   verifyPassword,
   getRateLimit,
   recordFailure,
@@ -39,7 +39,7 @@ export function createAuthActions({
         };
       }
 
-      if (!(await verifyPassword(formData.get('password'), passwordHash))) {
+      if (!(await verifyPassword(formData.get('password'), password))) {
         const failed = await recordFailure(clientKey);
         return {
           ok: false,

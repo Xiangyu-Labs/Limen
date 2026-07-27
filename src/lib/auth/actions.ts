@@ -44,8 +44,8 @@ const authActions = createAuthActions({
 });
 
 function loginKey(forwardedFor: string | null) {
-  const secret = process.env.SESSION_SECRET?.trim();
-  if (!secret) throw new Error('SESSION_SECRET is required');
+  const secret = process.env.AUTH_PASSWORD;
+  if (!secret) throw new Error('AUTH_PASSWORD is required');
   return createLoginAttemptKey(forwardedFor, secret);
 }
 

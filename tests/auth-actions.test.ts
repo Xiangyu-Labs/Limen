@@ -7,7 +7,7 @@ function dependencies(overrides: Record<string, unknown> = {}) {
   return {
     cookieWrites,
     actions: createAuthActions({
-      passwordHash: 'encoded',
+      password: 'correct-password-value',
       verifyPassword: async (password) => password === 'correct-password-value',
       getRateLimit: async () => ({ blocked: false, retryAfterSeconds: 0 }),
       recordFailure: async () => ({

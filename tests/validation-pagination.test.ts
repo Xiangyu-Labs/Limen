@@ -34,10 +34,24 @@ test('entry validation enforces content, date, and bulk limits', () => {
 test('cursor round trips and invalid pagination input is rejected', () => {
   const cursor = {
     createdAt: new Date('2024-01-03T00:00:00.000Z'),
+    recordedAt: new Date('2024-01-03T12:00:00.000Z'),
     id: 'entry-1',
   };
   assert.deepEqual(decodeEntryCursor(encodeEntryCursor(cursor)), cursor);
   assert.throws(() => decodeEntryCursor('not-a-cursor'), InputValidationError);
+  assert.throws(
+    () =>
+      decodeEntryCursor(
+        Buffer.from(
+          JSON.stringify({
+            v: 1,
+            createdAt: cursor.createdAt.toISOString(),
+            id: cursor.id,
+          }),
+        ).toString('base64url'),
+      ),
+    InputValidationError,
+  );
   assert.equal(parsePageLimit(null), 20);
   assert.throws(() => parsePageLimit('0'), InputValidationError);
   assert.throws(() => parsePageLimit('101'), InputValidationError);

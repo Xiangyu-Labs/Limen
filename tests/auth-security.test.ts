@@ -2,39 +2,30 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createLoginAttemptKey,
-  generateApiToken,
-  hashPassword,
-  verifyApiToken,
+  hasValidBearerToken,
+  secureStringEqual,
   verifyPassword,
 } from '@/lib/auth/security';
 
-test('password hashes verify without storing plaintext', async () => {
-  const password = 'a-long-private-password';
-  const encoded = await hashPassword(password, Buffer.alloc(16, 7));
-  assert.doesNotMatch(encoded, new RegExp(password));
-  assert.equal(await verifyPassword(password, encoded), true);
-  assert.equal(await verifyPassword('wrong-password-value', encoded), false);
-  assert.equal(await verifyPassword(password, 'malformed'), false);
-  assert.equal(await verifyPassword('short', encoded), false);
+test('web login and Bearer API use the same plaintext password', async () => {
+  const password = 'one-shared-password';
+  assert.equal(await verifyPassword(password, password), true);
+  assert.equal(await verifyPassword('wrong', password), false);
+  assert.equal(secureStringEqual(password, password), true);
+  assert.equal(secureStringEqual('short', 'longer'), false);
   assert.equal(
-    await verifyPassword(
-      'x'.repeat(14),
-      await hashPassword('x'.repeat(14), Buffer.alloc(16, 8)),
+    hasValidBearerToken(
+      new Request('http://localhost/api/entries', {
+        headers: { Authorization: `Bearer ${password}` },
+      }),
+      password,
     ),
     true,
   );
-  await assert.rejects(
-    () => hashPassword('x'.repeat(13), Buffer.alloc(16, 8)),
-    /14-128/,
+  assert.equal(
+    hasValidBearerToken(new Request('http://localhost/api/entries'), password),
+    false,
   );
-  assert.equal(await verifyPassword('x'.repeat(129), encoded), false);
-});
-
-test('API tokens are independently generated and hash verified', () => {
-  const { token, hash } = generateApiToken();
-  assert.equal(verifyApiToken(token, hash), true);
-  assert.equal(verifyApiToken('wrong', hash), false);
-  assert.equal(hash.includes(token), false);
 });
 
 test('login identifiers are HMACed and stable', () => {

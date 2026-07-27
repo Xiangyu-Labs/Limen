@@ -1,6 +1,15 @@
 'use client';
 
-import { type FormEvent, useState, useTransition } from 'react';
+import {
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  useTransition,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, Save } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,6 +23,19 @@ import {
   buildEntryEditorShellModel,
 } from '@/components/EntryEditorShell';
 import { messages } from '@/lib/messages';
+import {
+  entryDraftKey,
+  hasEntryDraftChanges,
+  parseEntryDraft,
+  serializeEntryDraft,
+} from '@/lib/entry-draft';
+
+const DRAFT_SAVE_DELAY_MS = 500;
+const DRAFT_STORAGE_ERROR = '__limen_draft_storage_error__';
+const draftTimeFormatter = new Intl.DateTimeFormat('zh-CN', {
+  hour: '2-digit',
+  minute: '2-digit',
+});
 
 export function EntryEditorForm({
   mode,
@@ -27,16 +49,120 @@ export function EntryEditorForm({
   initialCreatedAt: string;
 }) {
   const router = useRouter();
-  const [content, setContent] = useState(initialContent);
+  const [contentOverride, setContentOverride] = useState<string>();
+  const [createdAtOverride, setCreatedAtOverride] = useState<string>();
   const [error, setError] = useState<string>();
+  const [draftStatus, setDraftStatus] = useState<string>();
   const [isPending, startTransition] = useTransition();
+  const draftKey = entryDraftKey(mode, entryId);
+  const subscribeToDraft = useCallback(
+    (onStoreChange: () => void) => {
+      const handleStorage = (event: StorageEvent) => {
+        if (event.key === draftKey) onStoreChange();
+      };
+      window.addEventListener('storage', handleStorage);
+      return () => window.removeEventListener('storage', handleStorage);
+    },
+    [draftKey],
+  );
+  const getDraftSnapshot = useCallback(() => {
+    try {
+      return localStorage.getItem(draftKey);
+    } catch {
+      return DRAFT_STORAGE_ERROR;
+    }
+  }, [draftKey]);
+  const rawDraft = useSyncExternalStore(
+    subscribeToDraft,
+    getDraftSnapshot,
+    () => null,
+  );
+  const restoredDraft = useMemo(
+    () => (rawDraft === DRAFT_STORAGE_ERROR ? null : parseEntryDraft(rawDraft)),
+    [rawDraft],
+  );
+  const shouldRestoreDraft = Boolean(
+    restoredDraft &&
+    hasEntryDraftChanges(
+      restoredDraft.content,
+      restoredDraft.createdAt,
+      initialContent,
+      initialCreatedAt,
+    ),
+  );
+  const content =
+    contentOverride ??
+    (shouldRestoreDraft ? restoredDraft?.content : undefined) ??
+    initialContent;
+  const createdAt =
+    createdAtOverride ??
+    (shouldRestoreDraft ? restoredDraft?.createdAt : undefined) ??
+    initialCreatedAt;
+  const latestDraftRef = useRef({
+    content: initialContent,
+    createdAt: initialCreatedAt,
+  });
+  const draftChangedRef = useRef(false);
+  const visibleDraftStatus =
+    draftStatus ??
+    (rawDraft === DRAFT_STORAGE_ERROR
+      ? '无法读取本地草稿'
+      : shouldRestoreDraft
+        ? '已恢复本地草稿'
+        : undefined);
   const shell = buildEntryEditorShellModel({
     mode,
     contentLength: content.length,
   });
 
+  const persistDraft = useCallback(() => {
+    if (!draftChangedRef.current) return;
+    try {
+      const latest = latestDraftRef.current;
+      if (
+        !hasEntryDraftChanges(
+          latest.content,
+          latest.createdAt,
+          initialContent,
+          initialCreatedAt,
+        )
+      ) {
+        localStorage.removeItem(draftKey);
+        draftChangedRef.current = false;
+        setDraftStatus('草稿已清除');
+        return;
+      }
+      const savedAt = new Date();
+      localStorage.setItem(
+        draftKey,
+        serializeEntryDraft(latest.content, latest.createdAt, savedAt),
+      );
+      setDraftStatus(`草稿已保存 ${draftTimeFormatter.format(savedAt)}`);
+    } catch {
+      setDraftStatus('草稿保存失败，请勿关闭页面');
+    }
+  }, [draftKey, initialContent, initialCreatedAt]);
+
+  useEffect(() => {
+    if (!draftChangedRef.current) return;
+    const timeout = window.setTimeout(persistDraft, DRAFT_SAVE_DELAY_MS);
+    return () => window.clearTimeout(timeout);
+  }, [content, createdAt, persistDraft]);
+
+  useEffect(() => {
+    const flush = () => persistDraft();
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', flush);
+    return () => {
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('visibilitychange', flush);
+    };
+  }, [persistDraft]);
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    draftChangedRef.current = true;
+    persistDraft();
     const formData = new FormData(event.currentTarget);
     setError(undefined);
     startTransition(async () => {
@@ -49,6 +175,12 @@ export function EntryEditorForm({
           setError(result.error);
           toast.error(result.error);
           return;
+        }
+        try {
+          localStorage.removeItem(draftKey);
+          draftChangedRef.current = false;
+        } catch {
+          // A stale local draft is safer than losing a failed save.
         }
         toast.success(
           mode === 'create'
@@ -79,7 +211,16 @@ export function EntryEditorForm({
             id="entry-created-at"
             name="createdAt"
             type="date"
-            defaultValue={initialCreatedAt}
+            value={createdAt}
+            onChange={(event) => {
+              draftChangedRef.current = true;
+              setDraftStatus('正在保存草稿');
+              latestDraftRef.current = {
+                content,
+                createdAt: event.target.value,
+              };
+              setCreatedAtOverride(event.target.value);
+            }}
             className="max-w-56"
             disabled={isPending}
             required
@@ -95,7 +236,15 @@ export function EntryEditorForm({
           required
           maxLength={ENTRY_CONTENT_MAX_LENGTH}
           value={content}
-          onChange={(event) => setContent(event.target.value)}
+          onChange={(event) => {
+            draftChangedRef.current = true;
+            setDraftStatus('正在保存草稿');
+            latestDraftRef.current = {
+              content: event.target.value,
+              createdAt,
+            };
+            setContentOverride(event.target.value);
+          }}
           placeholder={
             mode === 'create' ? messages.editor.contentPlaceholder : undefined
           }
@@ -110,7 +259,18 @@ export function EntryEditorForm({
               {error}
             </p>
           ) : null}
-          <div className="flex justify-end">
+          <div className="flex min-h-10 items-center justify-between gap-3">
+            <p
+              aria-live="polite"
+              className={
+                visibleDraftStatus?.includes('失败') ||
+                visibleDraftStatus?.includes('无法')
+                  ? 'text-sm text-danger'
+                  : 'text-sm text-muted'
+              }
+            >
+              {visibleDraftStatus}
+            </p>
             <Button
               type="submit"
               disabled={isPending || !content.trim()}

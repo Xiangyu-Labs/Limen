@@ -15,6 +15,13 @@
       "when": 1784272712617,
       "tag": "0001_silly_the_enforcers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785131907487,
+      "tag": "0002_lush_beast",
+      "breakpoints": true
     }
   ]
 }

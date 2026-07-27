@@ -19,8 +19,6 @@ const REQUIRED_SCRIPTS = [
   'check',
   'db:migrate',
   'db:generate',
-  'auth:hash-password',
-  'auth:generate-api-token',
 ];
 
 test('package.json exposes all required scripts', () => {
@@ -30,6 +28,11 @@ test('package.json exposes all required scripts', () => {
       `Expected script "${script}" to be defined`,
     );
   }
+});
+
+test('plaintext auth does not expose credential generation scripts', () => {
+  assert.equal(PKG.scripts['auth:hash-password'], undefined);
+  assert.equal(PKG.scripts['auth:generate-api-token'], undefined);
 });
 
 test('package.json does not contain test:node', () => {

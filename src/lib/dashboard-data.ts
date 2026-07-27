@@ -15,6 +15,7 @@ export type DashboardEntry = {
   tags: string | null;
   aiStatus: string | null;
   createdAt: Date;
+  recordedAt: Date;
 };
 
 export type DashboardEntriesPage = {
@@ -90,7 +91,15 @@ function buildEntryWhere(q?: string, cursorValue?: string): SQL | undefined {
   if (cursor) {
     const cursorCondition = or(
       lt(entries.createdAt, cursor.createdAt),
-      and(eq(entries.createdAt, cursor.createdAt), lt(entries.id, cursor.id)),
+      and(
+        eq(entries.createdAt, cursor.createdAt),
+        lt(entries.recordedAt, cursor.recordedAt),
+      ),
+      and(
+        eq(entries.createdAt, cursor.createdAt),
+        eq(entries.recordedAt, cursor.recordedAt),
+        lt(entries.id, cursor.id),
+      ),
     );
     if (cursorCondition) conditions.push(cursorCondition);
   }
@@ -118,10 +127,15 @@ export async function loadDashboardEntriesPage(
       tags: entries.tags,
       aiStatus: entries.aiStatus,
       createdAt: entries.createdAt,
+      recordedAt: entries.recordedAt,
     })
     .from(entries)
     .where(buildEntryWhere(q, cursor))
-    .orderBy(desc(entries.createdAt), desc(entries.id))
+    .orderBy(
+      desc(entries.createdAt),
+      desc(entries.recordedAt),
+      desc(entries.id),
+    )
     .limit(limit + 1);
 
   const hasMore = rows.length > limit;
@@ -134,7 +148,11 @@ export async function loadDashboardEntriesPage(
       limit,
       nextCursor:
         hasMore && last
-          ? encodeEntryCursor({ createdAt: last.createdAt, id: last.id })
+          ? encodeEntryCursor({
+              createdAt: last.createdAt,
+              recordedAt: last.recordedAt,
+              id: last.id,
+            })
           : null,
     },
   };
@@ -154,7 +172,11 @@ export async function loadApiEntriesPage(
     .select()
     .from(entries)
     .where(buildEntryWhere(undefined, cursor))
-    .orderBy(desc(entries.createdAt), desc(entries.id))
+    .orderBy(
+      desc(entries.createdAt),
+      desc(entries.recordedAt),
+      desc(entries.id),
+    )
     .limit(limit + 1);
   const hasMore = rows.length > limit;
   const items = hasMore ? rows.slice(0, limit) : rows;
@@ -166,7 +188,11 @@ export async function loadApiEntriesPage(
       limit,
       nextCursor:
         hasMore && last
-          ? encodeEntryCursor({ createdAt: last.createdAt, id: last.id })
+          ? encodeEntryCursor({
+              createdAt: last.createdAt,
+              recordedAt: last.recordedAt,
+              id: last.id,
+            })
           : null,
     },
   };

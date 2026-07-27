@@ -62,13 +62,21 @@ export function createEntriesRouteHandlers({
         const input = parseEntryInput(content, createdAt);
 
         id = createId();
-        await database.insert(entries).values({
-          id,
-          content: input.content,
-          source: 'web',
-          aiStatus: 'pending',
-          createdAt: input.createdAt,
-        });
+        const now = new Date();
+        const inserted = await database
+          .insert(entries)
+          .values({
+            id,
+            content: input.content,
+            source: 'web',
+            aiStatus: 'pending',
+            createdAt: input.createdAt,
+            recordedAt: now,
+            updatedAt: now,
+          })
+          .returning({ id: entries.id });
+        if (inserted[0]?.id !== id)
+          throw new Error('Entry insert not confirmed');
 
         try {
           await schedule(async () =>
@@ -79,7 +87,10 @@ export function createEntriesRouteHandlers({
         }
         return NextResponse.json(
           { id, status: 'created', aiStatus: 'pending' },
-          { status: 201 },
+          {
+            status: 201,
+            headers: { Location: `/api/entries/${id}` },
+          },
         );
       } catch (error) {
         if (error instanceof InputValidationError)

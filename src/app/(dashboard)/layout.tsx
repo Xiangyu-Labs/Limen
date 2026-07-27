@@ -22,7 +22,7 @@ export default async function DashboardLayout({
     <div className="flex min-h-screen flex-col bg-bg">
       <header className="sticky top-0 z-10 border-b border-border bg-surface/95 backdrop-blur">
         <div className="mx-auto max-w-5xl px-4 py-3 md:px-6">
-          <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 md:flex">
             <Link
               href={dashboardPath()}
               className="flex h-10 shrink-0 items-center font-semibold tracking-tight text-text transition-colors hover:text-primary"
@@ -31,9 +31,11 @@ export default async function DashboardLayout({
             </Link>
 
             {navControls ? (
-              <div className="min-w-[20rem] flex-1">{navControls}</div>
+              <div className="order-3 col-span-2 min-w-0 md:order-none md:flex-1">
+                {navControls}
+              </div>
             ) : (
-              <div className="min-w-0 flex-1" />
+              <div className="hidden min-w-0 flex-1 md:block" />
             )}
 
             <div className="flex shrink-0 items-center gap-2">

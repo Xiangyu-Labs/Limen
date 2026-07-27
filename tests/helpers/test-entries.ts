@@ -20,6 +20,7 @@ export async function seedEntry(
     source: value.source ?? 'web',
     aiStatus: value.aiStatus ?? 'pending',
     createdAt: value.createdAt ?? now,
+    recordedAt: value.recordedAt ?? now,
     updatedAt: value.updatedAt ?? now,
   };
 

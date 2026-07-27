@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getSession } from '@/lib/auth/session';
 import { loginPath, stripLegacyLocalePath } from '@/lib/pathname';
-import { verifyApiToken } from '@/lib/auth/security';
 import {
   applySecurityHeaders,
   buildContentSecurityPolicy,
@@ -11,8 +10,6 @@ import {
 type ProxyDecisionInput = {
   pathname: string;
   hasSession: boolean;
-  authHeader: string | null;
-  apiTokenHash: string | undefined;
 };
 
 type ProxyDecision =
@@ -24,6 +21,7 @@ export function shouldBypassProxy(pathname: string) {
   return (
     pathname.startsWith('/_next/static/') ||
     pathname.startsWith('/_next/image/') ||
+    pathname.startsWith('/api/') ||
     pathname === '/favicon.ico' ||
     pathname === '/robots.txt'
   );
@@ -32,25 +30,8 @@ export function shouldBypassProxy(pathname: string) {
 export function evaluateProxyRequest({
   pathname,
   hasSession,
-  authHeader,
-  apiTokenHash,
 }: ProxyDecisionInput): ProxyDecision {
   if (shouldBypassProxy(pathname)) return { type: 'next' };
-
-  if (pathname.startsWith('/api/dashboard')) {
-    return hasSession
-      ? { type: 'next' }
-      : { type: 'json', status: 401, body: { error: 'Unauthorized' } };
-  }
-
-  if (pathname.startsWith('/api')) {
-    const token = authHeader?.startsWith('Bearer ')
-      ? authHeader.slice(7)
-      : undefined;
-    return verifyApiToken(token, apiTokenHash)
-      ? { type: 'next' }
-      : { type: 'json', status: 401, body: { error: 'Unauthorized' } };
-  }
 
   const normalizedPath = stripLegacyLocalePath(pathname);
   if (normalizedPath !== pathname)
@@ -67,13 +48,9 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   if (shouldBypassProxy(pathname)) return NextResponse.next();
 
-  const needsSession =
-    !pathname.startsWith('/api/') || pathname.startsWith('/api/dashboard');
   const decision = evaluateProxyRequest({
     pathname,
-    hasSession: needsSession ? Boolean(await getSession()) : false,
-    authHeader: request.headers.get('authorization'),
-    apiTokenHash: process.env.API_TOKEN_HASH,
+    hasSession: Boolean(await getSession()),
   });
   const nonce = createRequestNonce();
   const contentSecurityPolicy = buildContentSecurityPolicy(nonce);

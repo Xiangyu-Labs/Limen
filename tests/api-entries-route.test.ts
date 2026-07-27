@@ -108,6 +108,7 @@ test('POST inserts an entry and schedules AI processing', async () => {
     );
 
     assert.equal(response.status, 201);
+    assert.equal(response.headers.get('location'), '/api/entries/api-entry');
     assert.deepEqual(await response.json(), {
       id: 'api-entry',
       status: 'created',
@@ -121,6 +122,7 @@ test('POST inserts an entry and schedules AI processing', async () => {
       where: (fields, { eq }) => eq(fields.id, 'api-entry'),
     });
     assert.equal(row?.createdAt?.toISOString(), '2024-01-04T00:00:00.000Z');
+    assert.equal(row?.recordedAt instanceof Date, true);
   } finally {
     await fixture.cleanup();
   }

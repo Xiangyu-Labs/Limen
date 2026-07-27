@@ -24,12 +24,24 @@ export const entries = pgTable(
     createdAt: date('created_at', { mode: 'date' })
       .notNull()
       .$defaultFn(() => normalizeToUtcDay(new Date())),
+    recordedAt: timestamp('recorded_at', {
+      withTimezone: true,
+      mode: 'date',
+    })
+      .notNull()
+      .defaultNow(),
     updatedAt: timestamp('updated_at', {
       withTimezone: true,
       mode: 'date',
     }).$defaultFn(() => new Date()),
   },
-  (table) => [index('entries_created_at_id_idx').on(table.createdAt, table.id)],
+  (table) => [
+    index('entries_timeline_idx').on(
+      table.createdAt.desc(),
+      table.recordedAt.desc(),
+      table.id.desc(),
+    ),
+  ],
 );
 
 export const authAttempts = pgTable(

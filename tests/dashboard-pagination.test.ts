@@ -13,6 +13,9 @@ test('dashboard cursor pagination is stable for entries on the same date', async
         id: `entry-${String(index).padStart(2, '0')}`,
         content: `content ${index}`,
         createdAt,
+        recordedAt: new Date(
+          `2024-01-03T12:00:${String(index).padStart(2, '0')}Z`,
+        ),
       });
     }
     const first = await loadDashboardEntriesPage({ limit: 10 }, fixture.db);
@@ -27,6 +30,13 @@ test('dashboard cursor pagination is stable for entries on the same date', async
       20,
     );
     assert.equal(first.pageInfo.hasMore, true);
+    assert.deepEqual(
+      [...first.items, ...second.items].map((entry) => entry.id),
+      Array.from(
+        { length: 20 },
+        (_, index) => `entry-${String(22 - index).padStart(2, '0')}`,
+      ),
+    );
   } finally {
     await fixture.cleanup();
   }

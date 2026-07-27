@@ -50,13 +50,15 @@ export function createEntryActions({
       }
 
       const id = createId();
+      const now = new Date();
       await db.insert(entries).values({
         id,
         content: input.content,
         source: 'web',
         aiStatus: 'pending',
         createdAt: input.createdAt,
-        updatedAt: new Date(),
+        recordedAt: now,
+        updatedAt: now,
       });
 
       await scheduleAI(async () => {

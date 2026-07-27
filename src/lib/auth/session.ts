@@ -23,9 +23,7 @@ export class UnauthorizedError extends Error {
 }
 
 function validateSessionSecret(secretKey: string) {
-  if (Buffer.byteLength(secretKey, 'utf8') < 32) {
-    throw new Error('SESSION_SECRET must contain at least 32 bytes');
-  }
+  if (!secretKey) throw new Error('AUTH_PASSWORD is required');
 }
 
 export function createSessionManager(secretKey: string) {
@@ -71,8 +69,8 @@ let runtimeManager: ReturnType<typeof createSessionManager> | undefined;
 
 function getRuntimeManager() {
   if (runtimeManager) return runtimeManager;
-  const secret = process.env.SESSION_SECRET?.trim();
-  if (!secret) throw new Error('SESSION_SECRET is required');
+  const secret = process.env.AUTH_PASSWORD;
+  if (!secret) throw new Error('AUTH_PASSWORD is required');
   runtimeManager = createSessionManager(secret);
   return runtimeManager;
 }

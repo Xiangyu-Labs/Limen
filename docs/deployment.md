@@ -42,13 +42,11 @@ Vercel 的 Build and Output Settings 使用以下默认设置即可：
 
 在 Vercel 项目设置中配置以下环境变量：
 
-| 变量                 | 必须 | 说明                                                                  |
-| -------------------- | ---- | --------------------------------------------------------------------- |
-| `DATABASE_URL`       | 是   | Neon Postgres 连接串，推荐通过 Vercel Marketplace 连接 Neon           |
-| `AUTH_PASSWORD_HASH` | 是   | scrypt 密码哈希，运行 `npm run auth:hash-password` 生成               |
-| `API_TOKEN_HASH`     | 是   | API Token 的 sha256 哈希，运行 `npm run auth:generate-api-token` 生成 |
-| `SESSION_SECRET`     | 是   | 会话加密密钥，至少 32 字节高熵随机值，例如 `openssl rand -base64 32`  |
-| `AI_API_KEY`         | 是   | OpenAI API Key                                                        |
+| 变量            | 必须 | 说明                                                        |
+| --------------- | ---- | ----------------------------------------------------------- |
+| `DATABASE_URL`  | 是   | Neon Postgres 连接串，推荐通过 Vercel Marketplace 连接 Neon |
+| `AUTH_PASSWORD` | 是   | Web 登录和 Bearer API 共用的明文密码                        |
+| `AI_API_KEY`    | 是   | OpenAI API Key                                              |
 
 **可选变量:**
 
@@ -64,45 +62,16 @@ Vercel 的 Build and Output Settings 使用以下默认设置即可：
 
 1. 在 Neon 新加坡区域创建数据库，并通过 Vercel Marketplace 连接或手动配置 `DATABASE_URL`
 2. 对目标数据库执行 `npm run db:migrate`
-3. 生成凭证并写入 Vercel 环境变量：
-   - 运行 `npm run auth:hash-password`，将输出的 `AUTH_PASSWORD_HASH` 填入
-   - 运行 `npm run auth:generate-api-token`，将 `API_TOKEN_HASH` 填入，并将原始 Token 保存到密码管理器
-4. 配置 `SESSION_SECRET`、`AI_API_KEY`、`AI_BASE_URL`、`AI_MODEL`
+3. 将同一个明文 `AUTH_PASSWORD` 写入 Vercel 环境变量，并同步到 Web 登录和所有 API 客户端
+4. 配置 `AI_API_KEY`、`AI_BASE_URL`、`AI_MODEL`
 5. 部署应用
 6. 验证部署（见下文）
 
-## 凭证生成与轮换
+## 凭证轮换
 
-### 生成密码哈希
+直接修改 Vercel 中的 `AUTH_PASSWORD` 并重新部署，然后同步更新 Web 登录和所有 API 客户端。轮换会同时注销现有浏览器会话并使旧 Bearer 凭证失效。
 
-```bash
-npm run auth:hash-password
-```
-
-交互式输入密码，输出 scrypt 哈希。密码必须 **14-128 字符**。
-
-### 生成 API Token
-
-```bash
-npm run auth:generate-api-token
-```
-
-输出 256-bit 随机 Token（base64url 编码）及其 sha256 哈希。原始 Token **仅显示一次**，请立即保存到密码管理器。
-
-### 轮换 SESSION_SECRET
-
-轮换 `SESSION_SECRET` 会立即注销全部浏览器会话。建议在 Vercel 中直接更新环境变量并重新部署。
-
-### 轮换 API Token
-
-1. 运行 `npm run auth:generate-api-token` 生成新 Token
-2. 将 `API_TOKEN_HASH` 更新到 Vercel 并部署
-3. 将所有 API 客户端更新为新 Token
-4. 旧 Token 随部署立即失效
-
-### 删除旧密码明文
-
-验证部署成功后，从 Vercel 删除之前可能存在的 `AUTH_PASSWORD` 明文变量。应用只存储和验证 scrypt 哈希。
+升级旧部署时，删除 `AUTH_PASSWORD_HASH`、`API_TOKEN_HASH` 和 `SESSION_SECRET`，避免继续维护互相不同步的凭证。
 
 ## 部署验证
 
@@ -120,17 +89,17 @@ npm run auth:generate-api-token
 ```bash
 # 创建条目
 curl -X POST https://your-app.vercel.app/api/entries \
-  -H "Authorization: Bearer <token>" \
+  -H "Authorization: Bearer <AUTH_PASSWORD>" \
   -H "Content-Type: application/json" \
   -d '{"content":"测试条目内容","createdAt":"2026-07-24"}'
 
 # 列条目
 curl "https://your-app.vercel.app/api/entries?limit=5" \
-  -H "Authorization: Bearer <token>"
+  -H "Authorization: Bearer <AUTH_PASSWORD>"
 
 # 获取详情
 curl "https://your-app.vercel.app/api/entries/<id>" \
-  -H "Authorization: Bearer <token>"
+  -H "Authorization: Bearer <AUTH_PASSWORD>"
 ```
 
 ## 运行时说明
@@ -143,6 +112,6 @@ curl "https://your-app.vercel.app/api/entries/<id>" \
 ## 安全注意事项
 
 - 本应用为**单用户设计**，API 无用户层级权限控制
-- `AUTH_PASSWORD_HASH`、`API_TOKEN_HASH`、`SESSION_SECRET` 视为敏感信息
+- `AUTH_PASSWORD` 是明文主凭证，只应存放在 Vercel 环境变量、密码管理器和受信任的 API 客户端中
 - 部署后应验证安全响应头和 nonce CSP 是否正常工作
-- 建议定期轮换 API Token 和 SESSION_SECRET
+- 轮换 `AUTH_PASSWORD` 后必须同时验证 Web 登录和 API 写入

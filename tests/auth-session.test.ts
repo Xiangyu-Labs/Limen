@@ -13,9 +13,17 @@ test('session manager creates and verifies constrained owner tokens', async () =
   assert.equal(typeof payload.jti, 'string');
 });
 
-test('session manager rejects weak secrets and invalid cookies', async () => {
+test('session manager accepts the shared password and rejects invalid cookies', async () => {
   const { createSessionManager } = await import('@/lib/auth/session');
-  assert.throws(() => createSessionManager('too-short'), /32 bytes/);
+  assert.throws(() => createSessionManager(''), /AUTH_PASSWORD/);
+  assert.equal(
+    (
+      await createSessionManager('short').verify(
+        await createSessionManager('short').create(),
+      )
+    ).sub,
+    'owner',
+  );
   const manager = createSessionManager(SECRET);
   assert.equal(
     await manager.getSession({ get: () => ({ value: 'invalid' }) }),

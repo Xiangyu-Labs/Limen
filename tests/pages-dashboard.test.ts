@@ -22,6 +22,7 @@ test('dashboard view model exposes pending AI status', async () => {
         tags: null,
         aiStatus: 'pending',
         createdAt: new Date(),
+        recordedAt: new Date(),
       },
     ],
     pageInfo: { hasMore: false, nextCursor: null, limit: 20 },
@@ -44,6 +45,7 @@ test('dashboard view model prefers AI-enhanced title, summary, and tags without 
         tags: JSON.stringify(['one', 'two']),
         aiStatus: 'done',
         createdAt: new Date(),
+        recordedAt: new Date(),
       },
     ],
     pageInfo: { hasMore: false, nextCursor: null, limit: 20 },
@@ -68,6 +70,7 @@ test('dashboard view model marks failed AI entries clearly', async () => {
         tags: null,
         aiStatus: 'failed',
         createdAt: new Date(),
+        recordedAt: new Date(),
       },
     ],
     pageInfo: { hasMore: false, nextCursor: null, limit: 20 },
@@ -128,21 +131,11 @@ test('dashboard top navigation only keeps search controls', () => {
   assert.doesNotMatch(dashboardSource, /<h1\b/);
   assert.match(layoutSource, /navControls/);
   assert.match(headerSource, /\{navControls\}/);
-  assert.doesNotMatch(
-    headerSource,
-    /flex-col/,
-    'top navigation controls must stay in one row',
-  );
-  assert.doesNotMatch(
-    headerSource,
-    /lg:grid/,
-    'top navigation should not switch between stacked and grid layouts',
-  );
-  assert.match(
-    headerSource,
-    /overflow-x-auto/,
-    'single-row navigation should scroll horizontally instead of wrapping',
-  );
+  assert.match(headerSource, /grid-cols-\[minmax\(0,1fr\)_auto\]/);
+  assert.match(headerSource, /col-span-2/);
+  assert.match(headerSource, /md:flex/);
+  assert.doesNotMatch(headerSource, /overflow-x-auto/);
+  assert.doesNotMatch(headerSource, /min-w-\[20rem\]/);
   assert.match(navControlsSource, /DashboardFilters/);
   assert.doesNotMatch(navControlsSource, /loadDashboardEntries/);
   assert.doesNotMatch(navControlsSource, /filterDashboardEntriesByDate/);
