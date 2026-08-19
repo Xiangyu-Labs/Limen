@@ -11,7 +11,7 @@ import {
   useTransition,
 } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createEntry, updateEntry } from '@/lib/actions/entries';
 import { ENTRY_CONTENT_MAX_LENGTH } from '@/lib/validation';
@@ -31,25 +31,23 @@ import {
 } from '@/lib/entry-draft';
 import type { EditorFontSize } from '@/lib/settings-core';
 import { cn } from '@/lib/utils';
+import { formatTimestampInTimeZone } from '@/lib/format';
 
 const DRAFT_SAVE_DELAY_MS = 500;
 const DRAFT_STORAGE_ERROR = '__limen_draft_storage_error__';
-const draftTimeFormatter = new Intl.DateTimeFormat('zh-CN', {
-  hour: '2-digit',
-  minute: '2-digit',
-});
-
 export function EntryEditorForm({
   mode,
   entryId,
   initialContent = '',
   initialCreatedAt,
+  timeZone,
   editorFontSize = 'medium',
 }: {
   mode: 'create' | 'edit';
   entryId?: string;
   initialContent?: string;
   initialCreatedAt: string;
+  timeZone: string;
   editorFontSize?: EditorFontSize;
 }) {
   const router = useRouter();
@@ -57,6 +55,7 @@ export function EntryEditorForm({
   const [createdAtOverride, setCreatedAtOverride] = useState<string>();
   const [error, setError] = useState<string>();
   const [draftStatus, setDraftStatus] = useState<string>();
+  const [draftDismissed, setDraftDismissed] = useState(false);
   const [isPending, startTransition] = useTransition();
   const draftKey = entryDraftKey(mode, entryId);
   const subscribeToDraft = useCallback(
@@ -86,6 +85,7 @@ export function EntryEditorForm({
     [rawDraft],
   );
   const shouldRestoreDraft = Boolean(
+    !draftDismissed &&
     restoredDraft &&
     hasEntryDraftChanges(
       restoredDraft.content,
@@ -141,11 +141,30 @@ export function EntryEditorForm({
         draftKey,
         serializeEntryDraft(latest.content, latest.createdAt, savedAt),
       );
-      setDraftStatus(`草稿已保存 ${draftTimeFormatter.format(savedAt)}`);
+      setDraftStatus(
+        `草稿已保存 ${formatTimestampInTimeZone(savedAt, timeZone)}`,
+      );
     } catch {
       setDraftStatus('草稿保存失败，请勿关闭页面');
     }
-  }, [draftKey, initialContent, initialCreatedAt]);
+  }, [draftKey, initialContent, initialCreatedAt, timeZone]);
+
+  function discardDraft() {
+    try {
+      localStorage.removeItem(draftKey);
+      setDraftDismissed(true);
+      setContentOverride(initialContent);
+      setCreatedAtOverride(initialCreatedAt);
+      latestDraftRef.current = {
+        content: initialContent,
+        createdAt: initialCreatedAt,
+      };
+      draftChangedRef.current = false;
+      setDraftStatus('草稿已丢弃');
+    } catch {
+      setDraftStatus('草稿丢弃失败，请重试');
+    }
+  }
 
   useEffect(() => {
     if (!draftChangedRef.current) return;
@@ -192,7 +211,6 @@ export function EntryEditorForm({
             : '修改已保存，正在重新整理',
         );
         router.push(result.data.redirectTo);
-        router.refresh();
       } catch {
         const message = '保存失败，请重试';
         setError(message);
@@ -269,17 +287,32 @@ export function EntryEditorForm({
             </p>
           ) : null}
           <div className="flex min-h-10 items-center justify-between gap-3">
-            <p
-              aria-live="polite"
-              className={
-                visibleDraftStatus?.includes('失败') ||
-                visibleDraftStatus?.includes('无法')
-                  ? 'text-sm text-danger'
-                  : 'text-sm text-muted'
-              }
-            >
-              {visibleDraftStatus}
-            </p>
+            <div className="flex min-w-0 items-center gap-2">
+              <p
+                aria-live="polite"
+                className={
+                  visibleDraftStatus?.includes('失败') ||
+                  visibleDraftStatus?.includes('无法')
+                    ? 'text-sm text-danger'
+                    : 'text-sm text-muted'
+                }
+              >
+                {visibleDraftStatus}
+              </p>
+              {shouldRestoreDraft ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={discardDraft}
+                  disabled={isPending}
+                  className="shrink-0 text-muted"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  丢弃草稿
+                </Button>
+              ) : null}
+            </div>
             <Button
               type="submit"
               disabled={isPending || !content.trim()}

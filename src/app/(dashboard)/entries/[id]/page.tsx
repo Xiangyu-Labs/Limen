@@ -12,6 +12,7 @@ import { messages } from '@/lib/messages';
 import { dashboardPath } from '@/lib/pathname';
 import { parseStoredTags } from '@/lib/tags';
 import { PendingAIRefresh } from '@/components/PendingAIRefresh';
+import { recoverStalePendingEntries } from '@/lib/ai/stale-pending';
 
 export function buildEntryDetailViewModel(
   entry: {
@@ -27,7 +28,7 @@ export function buildEntryDetailViewModel(
   return {
     ...entry,
     displayTitle: entry.title || copy.editor.untitledCapture,
-    summary: entry.aiStatus === 'done' ? entry.summary : null,
+    summary: entry.summary,
     tags: parseStoredTags(entry.tags),
     statusLabel:
       entry.aiStatus === 'failed'
@@ -47,6 +48,7 @@ export default async function EntryDetailPage({
 }) {
   const { id } = await params;
 
+  await recoverStalePendingEntries();
   const entry = await db.query.entries.findFirst({
     where: eq(entries.id, id),
   });

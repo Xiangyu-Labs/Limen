@@ -25,6 +25,10 @@ test('settings form provides all settings, GET filters, and font sizes', () => {
   assert.match(source, /action="\/api\/export"/);
   assert.match(source, /method="get"/);
   assert.match(source, /name="tags"/);
+  assert.match(source, /checked=\{option === value\}/);
+  assert.doesNotMatch(source, /defaultChecked/);
+  assert.match(source, /记录日期按日历日保存，不随时区变化/);
+  assert.match(source, /setExportFormat\(result\.data\.defaultExportFormat\)/);
 
   const editor = readFileSync(
     new URL('../src/components/EntryEditorForm.tsx', import.meta.url),
@@ -33,6 +37,8 @@ test('settings form provides all settings, GET filters, and font sizes', () => {
   assert.match(editor, /editorFontSize === 'small'[\s\S]*'text-base'/);
   assert.match(editor, /editorFontSize === 'medium'[\s\S]*'text-lg'/);
   assert.match(editor, /editorFontSize === 'large'[\s\S]*'text-xl'/);
+  assert.match(editor, /丢弃草稿/);
+  assert.doesNotMatch(editor, /router\.push\([\s\S]{0,100}router\.refresh/);
 });
 
 test('settings page maps all export redirect states to feedback', () => {

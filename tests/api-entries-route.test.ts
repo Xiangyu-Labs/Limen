@@ -187,6 +187,8 @@ test('POST keeps the entry when AI scheduling fails', async () => {
       where: (fields, { eq }) => eq(fields.id, 'scheduled-entry'),
     });
     assert.equal(row?.content, 'Saved before scheduler failure');
+    assert.equal(row?.aiStatus, 'failed');
+    assert.equal((await response.json()).aiStatus, 'failed');
   } finally {
     await fixture.cleanup();
   }

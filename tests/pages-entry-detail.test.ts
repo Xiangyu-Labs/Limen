@@ -47,6 +47,26 @@ test('entry detail view model exposes incomplete AI status', async () => {
   assert.equal(model.statusTone, 'muted');
 });
 
+test('entry detail preserves existing summary and tags while AI is pending', async () => {
+  const { buildEntryDetailViewModel } =
+    await import('@/app/(dashboard)/entries/[id]/page');
+  const model = buildEntryDetailViewModel(
+    {
+      content: 'Edited content',
+      title: 'Existing title',
+      summary: 'Existing summary',
+      tags: JSON.stringify(['existing']),
+      aiStatus: 'pending',
+      createdAt: new Date(),
+    },
+    messages,
+  );
+
+  assert.equal(model.summary, 'Existing summary');
+  assert.deepEqual(model.tags, ['existing']);
+  assert.equal(model.statusLabel, '处理中');
+});
+
 test('entry detail view model exposes regenerate action copy', async () => {
   const { buildEntryDetailViewModel } =
     await import('@/app/(dashboard)/entries/[id]/page');
@@ -75,4 +95,15 @@ test('entry detail page does not render a time-of-day for entry dates', () => {
 
   assert.doesNotMatch(source, /Clock/);
   assert.doesNotMatch(source, /type="time"/);
+});
+
+test('delete dialog remains controlled while deletion is pending', () => {
+  const source = readFileSync(
+    new URL('../src/components/EntryDetailActions.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(source, /open=\{deleteDialogOpen\}/);
+  assert.match(source, /if \(!isDeleting\) setDeleteDialogOpen\(open\)/);
+  assert.match(source, /event\.preventDefault\(\)/);
+  assert.match(source, /setDeleteDialogOpen\(false\)/);
 });

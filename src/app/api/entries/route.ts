@@ -3,6 +3,7 @@ import { db, type AppDatabase } from '@/lib/db';
 import { entries } from '@/lib/db/schema';
 import { processAIEntry } from '@/lib/ai/processor';
 import { nanoid } from 'nanoid';
+import { eq } from 'drizzle-orm';
 import { loadApiEntriesPage } from '@/lib/dashboard-data';
 import { hasValidBearerToken } from '@/lib/auth/security';
 import { InputValidationError, parseEntryInput } from '@/lib/validation';
@@ -39,6 +40,7 @@ export function createEntriesRouteHandlers({
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
       let id: string | null = null;
+      let aiStatus = 'pending';
       try {
         let body: unknown;
         try {
@@ -84,9 +86,14 @@ export function createEntriesRouteHandlers({
           );
         } catch (error) {
           console.error(`AI scheduling failed for entry ${id}:`, error);
+          aiStatus = 'failed';
+          await database
+            .update(entries)
+            .set({ aiStatus, updatedAt: new Date() })
+            .where(eq(entries.id, id as string));
         }
         return NextResponse.json(
-          { id, status: 'created', aiStatus: 'pending' },
+          { id, status: 'created', aiStatus },
           {
             status: 201,
             headers: { Location: `/api/entries/${id}` },

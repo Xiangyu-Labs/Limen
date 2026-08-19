@@ -1,6 +1,6 @@
 'use client';
 
-import { useOptimistic, useTransition } from 'react';
+import { useOptimistic, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
@@ -22,6 +22,7 @@ export function EntryDetailActions({
   const [isRegenerating, startRegeneration] = useTransition();
   const [isDeleting, startDeletion] = useTransition();
   const [optimisticPending, setOptimisticPending] = useOptimistic(pending);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   function regenerate() {
     startRegeneration(async () => {
@@ -49,6 +50,7 @@ export function EntryDetailActions({
           return;
         }
         toast.success('记录已删除');
+        setDeleteDialogOpen(false);
         router.replace(dashboardPath());
         router.refresh();
       } catch {
@@ -91,7 +93,12 @@ export function EntryDetailActions({
         </Link>
       </Button>
 
-      <AlertDialog.Root>
+      <AlertDialog.Root
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!isDeleting) setDeleteDialogOpen(open);
+        }}
+      >
         <AlertDialog.Trigger asChild>
           <Button
             variant="ghost"
@@ -119,10 +126,15 @@ export function EntryDetailActions({
               删除后无法恢复。
             </AlertDialog.Description>
             <div className="mt-5 flex justify-end gap-2">
-              <AlertDialog.Cancel asChild>
-                <Button variant="ghost">取消</Button>
+              <AlertDialog.Cancel asChild disabled={isDeleting}>
+                <Button variant="ghost" disabled={isDeleting}>
+                  取消
+                </Button>
               </AlertDialog.Cancel>
-              <AlertDialog.Action asChild>
+              <AlertDialog.Action
+                asChild
+                onClick={(event) => event.preventDefault()}
+              >
                 <Button
                   type="button"
                   disabled={isDeleting}

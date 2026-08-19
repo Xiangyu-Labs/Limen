@@ -42,6 +42,7 @@ export default async function NewEntryPage() {
           settings.timeZone,
         )}
         editorFontSize={settings.editorFontSize}
+        timeZone={settings.timeZone}
       />
     </div>
   );

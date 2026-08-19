@@ -12,11 +12,14 @@ export const messages = {
   },
   dashboard: {
     emptyMessage: '还没有记录',
+    noSearchResults: '未找到相关记录',
+    clearSearch: '清除搜索',
     createFirstEntry: '写一条',
     untitledEntry: '未命名记录',
     loadMore: '加载更多',
     endOfTimeline: '已经到底了',
     loadFailed: '加载失败，请重试',
+    retryLoad: '重新加载',
   },
   editor: {
     newCapture: '新建',
@@ -38,5 +41,6 @@ export const messages = {
     submitLoading: '进入中...',
     password: '密码',
     unexpectedError: '发生了意外错误',
+    rateLimited: (remaining: string) => `尝试次数过多，请 ${remaining} 后再试`,
   },
 } as const;

@@ -148,3 +148,13 @@ test('dashboard top navigation only keeps search controls', () => {
   assert.doesNotMatch(filtersSource, /CalendarFilter/);
   assert.doesNotMatch(filtersSource, /entriesCount/);
 });
+
+test('dashboard distinguishes an empty journal from no search results', () => {
+  const source = readFileSync(
+    new URL('../src/app/(dashboard)/page.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(source, /messages\.dashboard\.noSearchResults/);
+  assert.match(source, /messages\.dashboard\.clearSearch/);
+  assert.match(source, /href=\{dashboardPath\(\)\}/);
+});

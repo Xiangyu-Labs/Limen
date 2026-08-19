@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth/session';
 import { db } from '@/lib/db';
 import { entries } from '@/lib/db/schema';
 import { normalizeAIStatus, type AIStatus } from '@/lib/ai/polling';
+import { recoverStalePendingEntries } from '@/lib/ai/stale-pending';
 
 type StatusRouteDependencies = {
   authorize: () => unknown | Promise<unknown>;
@@ -37,6 +38,7 @@ export function createEntryStatusHandler({
 export const GET = createEntryStatusHandler({
   authorize: getSession,
   async loadStatus(id) {
+    await recoverStalePendingEntries();
     const entry = await db.query.entries.findFirst({
       columns: { aiStatus: true },
       where: eq(entries.id, id),

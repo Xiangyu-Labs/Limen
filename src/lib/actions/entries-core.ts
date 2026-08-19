@@ -61,14 +61,22 @@ export function createEntryActions({
         updatedAt: now,
       });
 
-      await scheduleAI(async () => {
-        await processAIEntry(id, input.content).catch((err) => {
-          console.error(
-            `AI background processing failed for entry ${id}:`,
-            err,
-          );
+      try {
+        await scheduleAI(async () => {
+          await processAIEntry(id, input.content).catch((err) => {
+            console.error(
+              `AI background processing failed for entry ${id}:`,
+              err,
+            );
+          });
         });
-      });
+      } catch (error) {
+        console.error(`AI scheduling failed for entry ${id}:`, error);
+        await db
+          .update(entries)
+          .set({ aiStatus: 'failed', updatedAt: new Date() })
+          .where(eq(entries.id, id));
+      }
 
       revalidatePath(dashboardPath());
       return { ok: true, data: { id, redirectTo: dashboardPath() } };

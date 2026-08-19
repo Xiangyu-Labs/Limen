@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { Loader2, Search, X } from 'lucide-react';
 import { SEARCH_QUERY_MAX_LENGTH } from '@/lib/validation';
 
@@ -34,6 +34,10 @@ function SearchForm({
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [isPending, startTransition] = useTransition();
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setQuery(initialQuery), 0);
+    return () => window.clearTimeout(timeout);
+  }, [initialQuery]);
   function navigate(value: string) {
     startTransition(() => router.push(buildSearchHref(currentUrl, value)));
   }
@@ -89,7 +93,6 @@ export function SearchInput({
   const currentUrl = `http://localhost${pathname}?${searchParams.toString()}`;
   return (
     <SearchForm
-      key={query}
       initialQuery={query}
       placeholder={placeholder}
       className={className}

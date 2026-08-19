@@ -28,3 +28,28 @@ test('recorded_at migration backfills existing entries before requiring it', asy
     await client.close();
   }
 });
+
+test('pending recovery migration backfills updated_at before requiring it', async () => {
+  const client = new PGlite();
+  try {
+    for (const name of [
+      '0000_pale_bloodstrike.sql',
+      '0001_silly_the_enforcers.sql',
+      '0002_lush_beast.sql',
+      '0003_soft_lady_ursula.sql',
+    ]) {
+      await client.exec(migration(name));
+    }
+    await client.query(
+      `insert into entries (id, content, created_at, updated_at)
+       values ('missing-update', 'kept', '2026-07-24', null)`,
+    );
+    await client.exec(migration('0004_pending_recovery.sql'));
+    const result = await client.query<{ updated_at: Date }>(
+      `select updated_at from entries where id = 'missing-update'`,
+    );
+    assert.ok(result.rows[0].updated_at);
+  } finally {
+    await client.close();
+  }
+});

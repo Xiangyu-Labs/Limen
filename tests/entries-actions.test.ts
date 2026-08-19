@@ -88,6 +88,29 @@ test('createEntry returns navigation data and schedules AI', async () => {
   }
 });
 
+test('createEntry marks the record failed when scheduling throws', async () => {
+  const fixture = await createTestDb();
+  try {
+    const actions = createEntryActions({
+      db: fixture.db,
+      createId: () => 'schedule-failed',
+      scheduleAI: () => {
+        throw new Error('scheduler unavailable');
+      },
+      processAIEntry: async () => {},
+      revalidatePath: () => {},
+    });
+    const result = await actions.createEntry(form('Still saved'));
+    assert.equal(result.ok, true);
+    const row = await fixture.db.query.entries.findFirst({
+      where: eq(entries.id, 'schedule-failed'),
+    });
+    assert.equal(row?.aiStatus, 'failed');
+  } finally {
+    await fixture.cleanup();
+  }
+});
+
 test('updateEntry resets generated fields and returns detail navigation', async () => {
   const fixture = await createTestDb();
   try {

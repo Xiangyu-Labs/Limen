@@ -5,6 +5,7 @@ import { decodeEntryCursor, encodeEntryCursor } from '@/lib/pagination';
 import { normalizeSearchQuery } from '@/lib/validation';
 import { parseStoredTags } from '@/lib/tags';
 import { messages } from '@/lib/messages';
+import { recoverStalePendingEntries } from '@/lib/ai/stale-pending';
 
 export const DASHBOARD_PREVIEW_LENGTH = 280;
 
@@ -119,6 +120,7 @@ export async function loadDashboardEntriesPage(
   },
   database: AppDatabase = db,
 ): Promise<DashboardEntriesPage> {
+  await recoverStalePendingEntries(database);
   const rows = await database
     .select({
       id: entries.id,
@@ -168,6 +170,7 @@ export async function loadApiEntriesPage(
   },
   database: AppDatabase = db,
 ) {
+  await recoverStalePendingEntries(database);
   const rows = await database
     .select()
     .from(entries)

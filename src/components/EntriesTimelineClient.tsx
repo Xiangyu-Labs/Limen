@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useTransition } from 'react';
+import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
 import { Calendar, Loader2, Sparkles } from 'lucide-react';
 import { bulkRegenerateEntryMetadata } from '@/lib/actions/entries';
@@ -13,19 +14,37 @@ import { mergeTimelinePages } from '@/lib/timeline';
 import {
   AdaptiveAIPollingScheduler,
   AI_POLL_SWR_OPTIONS,
+  applyEntryStatusPatches,
+  chunkPendingEntryIds,
   pendingEntryIds,
+  type EntryStatusPatch,
 } from '@/lib/ai/polling';
+import { formatEntryCalendarDate } from '@/lib/format';
 
-const entryDateFormatter = new Intl.DateTimeFormat('zh-CN', {
-  month: '2-digit',
-  day: '2-digit',
-  timeZone: 'UTC',
-});
+type EntryStatusResponse = { entries: EntryStatusPatch[] };
 
 async function fetchTimelinePage(url: string): Promise<TimelineEntriesPage> {
   const response = await fetch(url);
   if (!response.ok) throw new Error('加载时间线失败');
   return response.json();
+}
+
+export async function fetchEntryStatusPatches(
+  ids: string[],
+  fetcher: typeof fetch = fetch,
+) {
+  const responses = await Promise.all(
+    chunkPendingEntryIds(ids).map(async (batch) => {
+      const response = await fetcher('/api/dashboard/entries/status', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ids: batch }),
+      });
+      if (!response.ok) throw new Error('加载 AI 状态失败');
+      return (await response.json()) as EntryStatusResponse;
+    }),
+  );
+  return { entries: responses.flatMap((response) => response.entries) };
 }
 
 export function EntriesTimelineClient({
@@ -55,15 +74,34 @@ export function EntriesTimelineClient({
       {
         fallbackData: [initialPage],
         revalidateFirstPage: false,
-        refreshInterval: (latestData) =>
-          pollingScheduler.getInterval(pendingEntryIds(latestData)),
-        ...AI_POLL_SWR_OPTIONS,
-        onError: () => pollingScheduler.recordFailure(),
-        onSuccess: () => pollingScheduler.recordSuccess(),
       },
     );
 
   const timelineEntries = useMemo(() => mergeTimelinePages(data), [data]);
+  const pendingIds = useMemo(() => pendingEntryIds(data), [data]);
+  const pendingSignature = pendingIds.join('\u0000');
+  useSWR<EntryStatusResponse>(
+    pendingIds.length > 0
+      ? ['/api/dashboard/entries/status', pendingSignature]
+      : null,
+    () => fetchEntryStatusPatches(pendingIds),
+    {
+      refreshInterval: () => pollingScheduler.getInterval(pendingIds),
+      ...AI_POLL_SWR_OPTIONS,
+      onError: () => pollingScheduler.recordFailure(),
+      onSuccess: (response) => {
+        pollingScheduler.recordSuccess();
+        void mutate(
+          (pages) =>
+            pages?.map((page) => ({
+              ...page,
+              items: applyEntryStatusPatches(page.items, response.entries),
+            })),
+          { revalidate: false },
+        );
+      },
+    },
+  );
   const lastPage = data?.at(-1) ?? initialPage;
   const hasMore = lastPage.pageInfo.hasMore;
   const isLoadingMore = isValidating && size > (data?.length ?? 0);
@@ -78,7 +116,12 @@ export function EntriesTimelineClient({
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel || !hasMore || typeof IntersectionObserver === 'undefined')
+    if (
+      !sentinel ||
+      !hasMore ||
+      error ||
+      typeof IntersectionObserver === 'undefined'
+    )
       return;
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -89,12 +132,11 @@ export function EntriesTimelineClient({
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, isValidating, setSize]);
+  }, [error, hasMore, isValidating, setSize]);
 
   function retryAllFailed() {
     if (failedIds.length === 0) return;
     startRetryTransition(async () => {
-      const previousData = data;
       try {
         await mutate(
           (pages) =>
@@ -115,14 +157,13 @@ export function EntriesTimelineClient({
         );
         const result = await bulkRegenerateEntryMetadata(failedIds);
         if (!result.ok) {
-          await mutate(previousData, { revalidate: false });
+          await mutate();
           toast.error(result.error);
           return;
         }
         toast.success(`已开始重新整理 ${result.data.ids.length} 条记录`);
-        await mutate();
       } catch {
-        await mutate(previousData, { revalidate: false });
+        await mutate();
         toast.error('重新整理失败，请重试');
       }
     });
@@ -160,9 +201,7 @@ export function EntriesTimelineClient({
           >
             <div className="flex items-center gap-2 text-sm text-muted sm:block sm:pt-0.5">
               <Calendar className="h-4 w-4 sm:hidden" />
-              <span>
-                {entryDateFormatter.format(new Date(entry.createdAt))}
-              </span>
+              <span>{formatEntryCalendarDate(new Date(entry.createdAt))}</span>
             </div>
             <div className="min-w-0 space-y-2">
               <div className="min-w-0 space-y-1">
@@ -211,7 +250,17 @@ export function EntriesTimelineClient({
         className="flex min-h-12 items-center justify-center"
         aria-live="polite"
       >
-        {hasMore ? (
+        {error ? (
+          <button
+            type="button"
+            disabled={isValidating}
+            onClick={() => void setSize(size)}
+            className="inline-flex h-10 items-center gap-2 rounded-md px-4 text-sm text-danger hover:bg-danger/10 disabled:opacity-50"
+          >
+            {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {messages.dashboard.retryLoad}
+          </button>
+        ) : hasMore ? (
           <button
             type="button"
             disabled={isValidating}
@@ -230,7 +279,7 @@ export function EntriesTimelineClient({
         )}
       </div>
       {error ? (
-        <p role="alert" className="text-center text-sm text-danger">
+        <p role="alert" className="sr-only">
           {messages.dashboard.loadFailed}
         </p>
       ) : null}

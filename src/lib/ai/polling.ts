@@ -1,3 +1,5 @@
+import { messages } from '@/lib/messages';
+
 export const AI_POLL_FAST_INTERVAL_MS = 3_000;
 export const AI_POLL_MEDIUM_INTERVAL_MS = 10_000;
 export const AI_POLL_SLOW_INTERVAL_MS = 30_000;
@@ -6,6 +8,59 @@ const FAST_WINDOW_MS = 15_000;
 const MEDIUM_WINDOW_MS = 60_000;
 
 export type AIStatus = 'pending' | 'done' | 'failed' | null;
+
+export type EntryStatusPatch = {
+  id: string;
+  aiStatus: AIStatus;
+  title: string | null;
+  summary: string | null;
+  tags: string[];
+};
+
+export const AI_STATUS_BATCH_SIZE = 100;
+
+export function chunkPendingEntryIds(
+  ids: string[],
+  batchSize = AI_STATUS_BATCH_SIZE,
+) {
+  const chunks: string[][] = [];
+  for (let index = 0; index < ids.length; index += batchSize) {
+    chunks.push(ids.slice(index, index + batchSize));
+  }
+  return chunks;
+}
+
+export function applyEntryStatusPatches<
+  T extends {
+    id: string;
+    displayTitle: string;
+    displaySummary: string;
+    tags: string[];
+    statusLabel: string | null;
+    statusTone: 'danger' | 'muted';
+    isPending: boolean;
+  },
+>(entries: T[], patches: EntryStatusPatch[]) {
+  const patchMap = new Map(patches.map((patch) => [patch.id, patch]));
+  return entries.map((entry) => {
+    const patch = patchMap.get(entry.id);
+    if (!patch) return entry;
+    return {
+      ...entry,
+      displayTitle: patch.title || messages.dashboard.untitledEntry,
+      displaySummary: patch.summary ?? entry.displaySummary,
+      tags: patch.tags,
+      statusLabel:
+        patch.aiStatus === 'failed'
+          ? messages.common.failed
+          : patch.aiStatus === 'pending'
+            ? messages.common.processing
+            : null,
+      statusTone: patch.aiStatus === 'failed' ? 'danger' : 'muted',
+      isPending: patch.aiStatus === 'pending',
+    } as T;
+  });
+}
 
 export function normalizeAIStatus(value: string | null): AIStatus {
   return value === 'pending' || value === 'done' || value === 'failed'

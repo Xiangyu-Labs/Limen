@@ -1,9 +1,10 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { Download, Save } from 'lucide-react';
 import { saveSettings } from '@/lib/actions/settings';
 import type { AppSettings } from '@/lib/settings-core';
+import type { ActionResult } from '@/lib/actions/result';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -43,9 +44,11 @@ const GROUPS = {
 function SegmentedControl({
   name,
   value,
+  onChange,
 }: {
   name: keyof typeof GROUPS;
   value: string;
+  onChange: (value: string) => void;
 }) {
   return (
     <div className="inline-flex max-w-full rounded-md border border-border bg-surface p-1">
@@ -56,7 +59,8 @@ function SegmentedControl({
             type="radio"
             name={name}
             value={option}
-            defaultChecked={option === value}
+            checked={option === value}
+            onChange={() => onChange(option)}
           />
           <span className="block rounded-sm px-3 py-1.5 text-sm text-muted transition-colors peer-checked:bg-surface2 peer-checked:font-medium peer-checked:text-text peer-focus-visible:ring-2 peer-focus-visible:ring-ring/40">
             {label}
@@ -74,7 +78,24 @@ export function SettingsForm({
   settings: AppSettings;
   availableTags: string[];
 }) {
-  const [state, action, pending] = useActionState(saveSettings, undefined);
+  const [formSettings, setFormSettings] = useState(settings);
+  const [exportFormat, setExportFormat] = useState(
+    settings.defaultExportFormat,
+  );
+  const [state, action, pending] = useActionState(
+    async (
+      previousState: ActionResult<AppSettings> | undefined,
+      formData: FormData,
+    ) => {
+      const result = await saveSettings(previousState, formData);
+      if (result.ok) {
+        setFormSettings(result.data);
+        setExportFormat(result.data.defaultExportFormat);
+      }
+      return result;
+    },
+    undefined,
+  );
   return (
     <div className="space-y-10">
       <section aria-labelledby="appearance-heading" className="space-y-5">
@@ -86,7 +107,16 @@ export function SettingsForm({
         <form action={action} className="space-y-6">
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium">主题</legend>
-            <SegmentedControl name="theme" value={settings.theme} />
+            <SegmentedControl
+              name="theme"
+              value={formSettings.theme}
+              onChange={(theme) =>
+                setFormSettings((current) => ({
+                  ...current,
+                  theme: theme as AppSettings['theme'],
+                }))
+              }
+            />
           </fieldset>
           <div className="max-w-md space-y-2">
             <label htmlFor="settings-time-zone" className="text-sm font-medium">
@@ -95,7 +125,13 @@ export function SettingsForm({
             <Input
               id="settings-time-zone"
               name="timeZone"
-              defaultValue={settings.timeZone}
+              value={formSettings.timeZone}
+              onChange={(event) =>
+                setFormSettings((current) => ({
+                  ...current,
+                  timeZone: event.target.value,
+                }))
+              }
               list="iana-time-zones"
               autoComplete="off"
               required
@@ -105,19 +141,36 @@ export function SettingsForm({
                 <option key={zone} value={zone} />
               ))}
             </datalist>
+            <p className="text-xs leading-5 text-muted">
+              时区用于确定今天、草稿时间和导出文件名；记录日期按日历日保存，不随时区变化。
+            </p>
           </div>
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium">编辑器字号</legend>
             <SegmentedControl
               name="editorFontSize"
-              value={settings.editorFontSize}
+              value={formSettings.editorFontSize}
+              onChange={(editorFontSize) =>
+                setFormSettings((current) => ({
+                  ...current,
+                  editorFontSize:
+                    editorFontSize as AppSettings['editorFontSize'],
+                }))
+              }
             />
           </fieldset>
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium">默认导出格式</legend>
             <SegmentedControl
               name="defaultExportFormat"
-              value={settings.defaultExportFormat}
+              value={formSettings.defaultExportFormat}
+              onChange={(defaultExportFormat) =>
+                setFormSettings((current) => ({
+                  ...current,
+                  defaultExportFormat:
+                    defaultExportFormat as AppSettings['defaultExportFormat'],
+                }))
+              }
             />
           </fieldset>
           <div className="flex items-center gap-3">
@@ -150,7 +203,10 @@ export function SettingsForm({
             <legend className="text-sm font-medium">格式</legend>
             <SegmentedControl
               name="format"
-              value={settings.defaultExportFormat}
+              value={exportFormat}
+              onChange={(format) =>
+                setExportFormat(format as AppSettings['defaultExportFormat'])
+              }
             />
           </fieldset>
           <div className="grid max-w-xl gap-4 sm:grid-cols-2">

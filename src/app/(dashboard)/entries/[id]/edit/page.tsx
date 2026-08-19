@@ -65,6 +65,7 @@ export default async function EditEntryPage({
         initialContent={model.content}
         initialCreatedAt={model.createdAt}
         editorFontSize={settings.editorFontSize}
+        timeZone={settings.timeZone}
       />
     </div>
   );

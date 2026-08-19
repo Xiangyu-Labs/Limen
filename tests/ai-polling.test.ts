@@ -7,9 +7,61 @@ import {
   AI_POLL_SLOW_INTERVAL_MS,
   AI_POLL_SWR_OPTIONS,
   TerminalAIStatusRefreshGuard,
+  applyEntryStatusPatches,
+  chunkPendingEntryIds,
   normalizeAIStatus,
   pendingEntryIds,
 } from '@/lib/ai/polling';
+
+test('pending IDs are split into batches of at most 100', () => {
+  const ids = Array.from({ length: 205 }, (_, index) => `entry-${index}`);
+  assert.deepEqual(
+    chunkPendingEntryIds(ids).map((batch) => batch.length),
+    [100, 100, 5],
+  );
+});
+
+test('status patches update only matching timeline entries', () => {
+  const unchanged = {
+    id: 'unchanged',
+    displayTitle: 'Keep',
+    displaySummary: 'Keep summary',
+    tags: ['keep'],
+    statusLabel: null,
+    statusTone: 'muted' as const,
+    isPending: false,
+  };
+  const result = applyEntryStatusPatches(
+    [
+      unchanged,
+      {
+        ...unchanged,
+        id: 'pending',
+        displayTitle: 'Old',
+        displaySummary: 'Raw preview',
+        isPending: true,
+        statusLabel: '处理中',
+      },
+    ],
+    [
+      {
+        id: 'pending',
+        aiStatus: 'done',
+        title: 'New title',
+        summary: 'New summary',
+        tags: ['new'],
+      },
+    ],
+  );
+  assert.equal(result[0], unchanged);
+  assert.deepEqual(result[1], {
+    ...unchanged,
+    id: 'pending',
+    displayTitle: 'New title',
+    displaySummary: 'New summary',
+    tags: ['new'],
+  });
+});
 
 test('AI polling moves through the 3, 10, and 30 second tiers', () => {
   const scheduler = new AdaptiveAIPollingScheduler();

@@ -35,13 +35,19 @@ export const entries = pgTable(
     updatedAt: timestamp('updated_at', {
       withTimezone: true,
       mode: 'date',
-    }).$defaultFn(() => new Date()),
+    })
+      .notNull()
+      .$defaultFn(() => new Date()),
   },
   (table) => [
     index('entries_timeline_idx').on(
       table.createdAt.desc(),
       table.recordedAt.desc(),
       table.id.desc(),
+    ),
+    index('entries_ai_status_updated_at_idx').on(
+      table.aiStatus,
+      table.updatedAt,
     ),
   ],
 );

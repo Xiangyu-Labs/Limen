@@ -2,6 +2,9 @@
 
 import { after } from 'next/server';
 import { cookies, headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import type { ActionResult } from '@/lib/actions/result';
+import { messages } from '@/lib/messages';
 import { createAuthActions } from './action-core';
 import { createLoginAttemptKey, verifyPassword } from './security';
 import {
@@ -49,14 +52,37 @@ function loginKey(forwardedFor: string | null) {
   return createLoginAttemptKey(forwardedFor, secret);
 }
 
-export async function login(formData: FormData) {
-  const requestHeaders = await headers();
-  const forwardedFor =
-    requestHeaders.get('x-vercel-forwarded-for') ??
-    requestHeaders.get('x-forwarded-for');
-  const result = await authActions.login(formData, loginKey(forwardedFor));
-  after(() => cleanupLoginAttempts());
-  return result;
+export async function handleLoginAttempt(
+  attempt: () => Promise<ActionResult>,
+  reportError: (error: unknown) => void = (error) =>
+    console.error('Login action failed:', error),
+): Promise<ActionResult> {
+  try {
+    return await attempt();
+  } catch (error) {
+    reportError(error);
+    return { ok: false, error: messages.login.unexpectedError };
+  }
+}
+
+export async function login(
+  _previousState: ActionResult | undefined,
+  formData: FormData,
+): Promise<ActionResult> {
+  const result = await handleLoginAttempt(async () => {
+    const requestHeaders = await headers();
+    const forwardedFor =
+      requestHeaders.get('x-vercel-forwarded-for') ??
+      requestHeaders.get('x-forwarded-for');
+    const loginResult = await authActions.login(
+      formData,
+      loginKey(forwardedFor),
+    );
+    after(() => cleanupLoginAttempts());
+    return loginResult;
+  });
+  if (!result.ok) return result;
+  redirect('/');
 }
 
 export const logout = authActions.logout;
