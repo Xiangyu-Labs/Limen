@@ -111,7 +111,7 @@ test('createEntry marks the record failed when scheduling throws', async () => {
   }
 });
 
-test('updateEntry resets generated fields and returns detail navigation', async () => {
+test('updateEntry keeps existing ai metadata and returns detail navigation', async () => {
   const fixture = await createTestDb();
   try {
     await fixture.db.insert(entries).values({
@@ -141,8 +141,56 @@ test('updateEntry resets generated fields and returns detail navigation', async 
       where: eq(entries.id, 'entry-update'),
     });
     assert.equal(row?.content, 'New');
-    assert.equal(row?.title, null);
     assert.equal(row?.aiStatus, 'pending');
+    // Held until the AI replaces them, so a failed regeneration cannot wipe
+    // an entry's title and summary.
+    assert.equal(row?.title, 'Old');
+    assert.equal(row?.summary, 'Old');
+    assert.equal(row?.tags, '["old"]');
+  } finally {
+    await fixture.cleanup();
+  }
+});
+
+test('a failed ai run after an edit leaves the old title and summary intact', async () => {
+  const fixture = await createTestDb();
+  try {
+    await fixture.db.insert(entries).values({
+      id: 'entry-ai-fails',
+      content: 'Old body',
+      title: 'A good title',
+      summary: 'A good summary',
+      tags: '["keep"]',
+      aiStatus: 'done',
+      createdAt: new Date('2024-01-01'),
+    });
+    let scheduled: (() => Promise<void>) | undefined;
+    const actions = createEntryActions({
+      db: fixture.db,
+      createId: () => 'unused',
+      scheduleAI: (job) => {
+        scheduled = job;
+      },
+      // Mirrors createAIProcessor's failure path.
+      processAIEntry: async (id) => {
+        await fixture.db
+          .update(entries)
+          .set({ aiStatus: 'failed', updatedAt: new Date() })
+          .where(eq(entries.id, id));
+      },
+      revalidatePath: () => {},
+    });
+
+    await actions.updateEntry('entry-ai-fails', form('New body', '2024-01-02'));
+    await scheduled?.();
+
+    const row = await fixture.db.query.entries.findFirst({
+      where: eq(entries.id, 'entry-ai-fails'),
+    });
+    assert.equal(row?.aiStatus, 'failed');
+    assert.equal(row?.content, 'New body');
+    assert.equal(row?.title, 'A good title');
+    assert.equal(row?.summary, 'A good summary');
   } finally {
     await fixture.cleanup();
   }

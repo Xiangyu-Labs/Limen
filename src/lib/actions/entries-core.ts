@@ -112,12 +112,12 @@ export function createEntryActions({
         throw error;
       }
 
+      // The previous title/summary/tags stay until the AI produces new ones.
+      // Clearing them up front meant a failed AI call destroyed good metadata
+      // permanently: fixing one typo could cost you the entry's title.
       const updated = await db
         .update(entries)
         .set({
-          title: null,
-          summary: null,
-          tags: null,
           content: input.content,
           aiStatus: 'pending',
           createdAt: input.createdAt,
