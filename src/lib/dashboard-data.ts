@@ -3,7 +3,11 @@ import { db, type AppDatabase } from '@/lib/db';
 import { entries } from '@/lib/db/schema';
 import { decodeEntryCursor, encodeEntryCursor } from '@/lib/pagination';
 import { normalizeSearchQuery } from '@/lib/validation';
-import { parseStoredTags } from '@/lib/tags';
+import {
+  entryTagNamesSql,
+  hasAnyTag,
+  parseTagNames,
+} from '@/lib/db/entry-tags';
 import { messages } from '@/lib/messages';
 import { recoverStalePendingEntries } from '@/lib/ai/stale-pending';
 
@@ -13,7 +17,7 @@ export type DashboardEntry = {
   id: string;
   title: string | null;
   preview: string;
-  tags: string | null;
+  tags: string[];
   aiStatus: string | null;
   createdAt: Date;
   recordedAt: Date;
@@ -53,7 +57,7 @@ export function buildTimelineEntriesPage(
       id: entry.id,
       displayTitle: entry.title || messages.dashboard.untitledEntry,
       displaySummary: entry.preview,
-      tags: parseStoredTags(entry.tags),
+      tags: entry.tags,
       statusLabel:
         entry.aiStatus === 'failed'
           ? messages.common.failed
@@ -74,7 +78,9 @@ function escapeLikePattern(value: string) {
     .replaceAll('_', '\\_');
 }
 
-function buildEntryWhere(q?: string, cursorValue?: string): SQL | undefined {
+type EntryFilters = { q?: string; tag?: string; cursor?: string };
+
+function buildEntryWhere({ q, tag, cursor: cursorValue }: EntryFilters) {
   const conditions: SQL[] = [];
   const query = normalizeSearchQuery(q);
   if (query) {
@@ -87,6 +93,10 @@ function buildEntryWhere(q?: string, cursorValue?: string): SQL | undefined {
       ) as SQL,
     );
   }
+
+  // Tag filtering runs in SQL against entry_tags_tag_id_entry_id_idx rather
+  // than loading rows and filtering them in JS.
+  if (tag) conditions.push(hasAnyTag([tag]));
 
   const cursor = decodeEntryCursor(cursorValue);
   if (cursor) {
@@ -109,15 +119,7 @@ function buildEntryWhere(q?: string, cursorValue?: string): SQL | undefined {
 }
 
 export async function loadDashboardEntriesPage(
-  {
-    q,
-    cursor,
-    limit = 20,
-  }: {
-    q?: string;
-    cursor?: string;
-    limit?: number;
-  },
+  { q, tag, cursor, limit = 20 }: EntryFilters & { limit?: number },
   database: AppDatabase = db,
 ): Promise<DashboardEntriesPage> {
   await recoverStalePendingEntries(database);
@@ -126,13 +128,13 @@ export async function loadDashboardEntriesPage(
       id: entries.id,
       title: entries.title,
       preview: sql<string>`left(coalesce(${entries.summary}, ${entries.content}), ${DASHBOARD_PREVIEW_LENGTH})`,
-      tags: entries.tags,
+      tags: entryTagNamesSql,
       aiStatus: entries.aiStatus,
       createdAt: entries.createdAt,
       recordedAt: entries.recordedAt,
     })
     .from(entries)
-    .where(buildEntryWhere(q, cursor))
+    .where(buildEntryWhere({ q, tag, cursor }))
     .orderBy(
       desc(entries.createdAt),
       desc(entries.recordedAt),
@@ -144,7 +146,7 @@ export async function loadDashboardEntriesPage(
   const items = hasMore ? rows.slice(0, limit) : rows;
   const last = items.at(-1);
   return {
-    items,
+    items: items.map((row) => ({ ...row, tags: parseTagNames(row.tags) })),
     pageInfo: {
       hasMore,
       limit,
@@ -172,9 +174,20 @@ export async function loadApiEntriesPage(
 ) {
   await recoverStalePendingEntries(database);
   const rows = await database
-    .select()
+    .select({
+      id: entries.id,
+      content: entries.content,
+      title: entries.title,
+      summary: entries.summary,
+      tags: entryTagNamesSql,
+      source: entries.source,
+      aiStatus: entries.aiStatus,
+      createdAt: entries.createdAt,
+      recordedAt: entries.recordedAt,
+      updatedAt: entries.updatedAt,
+    })
     .from(entries)
-    .where(buildEntryWhere(undefined, cursor))
+    .where(buildEntryWhere({ cursor }))
     .orderBy(
       desc(entries.createdAt),
       desc(entries.recordedAt),
@@ -185,7 +198,7 @@ export async function loadApiEntriesPage(
   const items = hasMore ? rows.slice(0, limit) : rows;
   const last = items.at(-1);
   return {
-    items,
+    items: items.map((row) => ({ ...row, tags: parseTagNames(row.tags) })),
     pageInfo: {
       hasMore,
       limit,

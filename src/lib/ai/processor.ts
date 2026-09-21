@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { db, type AppDatabase } from '@/lib/db';
 import { entries } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { normalizeTags, parseStoredTags } from '@/lib/tags';
+import { normalizeTags } from '@/lib/tags';
+import { listActiveTagNames, syncEntryTags } from '@/lib/db/entry-tags';
 
 const AI_CHUNK_LENGTH = 30_000;
 const CHUNK_CONCURRENCY = 3;
@@ -19,15 +20,12 @@ const aiResponseSchema = z
 
 export type AIResponse = z.infer<typeof aiResponseSchema>;
 
+/**
+ * Tag candidates offered to the model. Backed by the tags tables, so this is
+ * an indexed lookup instead of the full scan of entries.tags it used to be.
+ */
 export async function getExistingTags(database: AppDatabase) {
-  const rows = await database.query.entries.findMany({
-    columns: { tags: true },
-  });
-  const tags = new Set<string>();
-  for (const row of rows) {
-    for (const tag of parseStoredTags(row.tags)) tags.add(tag);
-  }
-  return Array.from(tags).sort();
+  return listActiveTagNames(database);
 }
 
 type AIClient = {
@@ -163,11 +161,13 @@ export function createAIProcessor({
         .set({
           title: aiResult.title,
           summary: aiResult.summary,
-          tags: JSON.stringify(aiResult.tags),
           aiStatus: 'done',
           updatedAt: new Date(),
         })
         .where(eq(entries.id, entryId));
+      // Respects tags_locked_at: hand-picked tags are never overwritten,
+      // while title and summary still refresh.
+      await syncEntryTags(database, entryId, aiResult.tags);
     } catch (error) {
       console.error(`AI processing failed for entry ${entryId}:`, error);
       await database

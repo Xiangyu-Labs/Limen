@@ -8,6 +8,7 @@ import { loadApiEntriesPage } from '@/lib/dashboard-data';
 import { hasValidBearerToken } from '@/lib/auth/security';
 import { InputValidationError, parseEntryInput } from '@/lib/validation';
 import { parsePageLimit } from '@/lib/pagination';
+import { serializeApiEntry } from '@/lib/api/entry-serializer';
 
 export const maxDuration = 60;
 export const preferredRegion = 'sin1';
@@ -119,7 +120,10 @@ export function createEntriesRouteHandlers({
         const limit = parsePageLimit(params.get('limit'));
         const cursor = params.get('cursor') ?? undefined;
         const page = await loadApiEntriesPage({ limit, cursor }, database);
-        return NextResponse.json(page);
+        return NextResponse.json({
+          ...page,
+          items: page.items.map(serializeApiEntry),
+        });
       } catch (error) {
         if (error instanceof InputValidationError)
           return validationResponse(error);

@@ -36,6 +36,20 @@
       "when": 1787149869526,
       "tag": "0004_pending_recovery",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789982291508,
+      "tag": "0005_neat_fantastic_four",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789982869803,
+      "tag": "0006_sturdy_ender_wiggin",
+      "breakpoints": true
     }
   ]
 }

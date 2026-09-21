@@ -119,10 +119,12 @@ test('updateEntry keeps existing ai metadata and returns detail navigation', asy
       content: 'Old',
       title: 'Old',
       summary: 'Old',
-      tags: '["old"]',
       aiStatus: 'done',
       createdAt: new Date('2024-01-01'),
     });
+    const { loadEntryTagsMap, syncEntryTags } =
+      await import('@/lib/db/entry-tags');
+    await syncEntryTags(fixture.db, 'entry-update', ['old']);
     const actions = createEntryActions({
       db: fixture.db,
       createId: () => 'unused',
@@ -146,7 +148,12 @@ test('updateEntry keeps existing ai metadata and returns detail navigation', asy
     // an entry's title and summary.
     assert.equal(row?.title, 'Old');
     assert.equal(row?.summary, 'Old');
-    assert.equal(row?.tags, '["old"]');
+    assert.deepEqual(
+      (await loadEntryTagsMap(fixture.db, ['entry-update'])).get(
+        'entry-update',
+      ),
+      ['old'],
+    );
   } finally {
     await fixture.cleanup();
   }
@@ -160,7 +167,6 @@ test('a failed ai run after an edit leaves the old title and summary intact', as
       content: 'Old body',
       title: 'A good title',
       summary: 'A good summary',
-      tags: '["keep"]',
       aiStatus: 'done',
       createdAt: new Date('2024-01-01'),
     });

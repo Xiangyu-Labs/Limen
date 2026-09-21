@@ -14,7 +14,7 @@ test('processAIEntry marks an entry done with structured metadata on success', a
       id: 'entry-success',
       content: 'Today I wrote tests.',
       aiStatus: 'pending',
-      tags: JSON.stringify(['journal', 'testing']),
+      tags: ['journal', 'testing'],
     });
 
     const { createAIProcessor } = await import('@/lib/ai/processor');
@@ -53,7 +53,10 @@ test('processAIEntry marks an entry done with structured metadata on success', a
     assert.equal(row?.aiStatus, 'done');
     assert.equal(row?.title, '我今天重新把测试补好了');
     assert.equal(row?.summary, '我把测试重新补齐了，心里踏实了很多。');
-    assert.equal(row?.tags, JSON.stringify(['testing', 'journal']));
+    // Tags now live in entry_tags; the AI writes them through syncEntryTags.
+    const { loadEntryTagsMap } = await import('@/lib/db/entry-tags');
+    const tagsById = await loadEntryTagsMap(fixture.db, ['entry-success']);
+    assert.deepEqual(tagsById.get('entry-success'), ['journal', 'testing']);
     const request = capturedRequest as AIRequest | null;
     assert.ok(request);
     assert.match(request.messages[0].content, /第一人称|“我”的视角|现有标签/);

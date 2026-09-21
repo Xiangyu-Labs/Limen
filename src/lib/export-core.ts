@@ -1,4 +1,4 @@
-import { normalizeTags, parseStoredTags } from '@/lib/tags';
+import { normalizeTags } from '@/lib/tags';
 import type { ExportFormat } from '@/lib/settings-core';
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -15,7 +15,7 @@ export type ExportEntry = {
   content: string;
   title: string | null;
   summary: string | null;
-  tags: string | null;
+  tags: string[];
   source: string | null;
   aiStatus: string | null;
   createdAt: Date;
@@ -53,14 +53,6 @@ export function parseExportParameters(params: URLSearchParams): ExportFilters {
   return { format, from, to, tags };
 }
 
-export function filterEntriesByTags(entries: ExportEntry[], tags: string[]) {
-  if (tags.length === 0) return entries;
-  const selected = new Set(tags);
-  return entries.filter((entry) =>
-    parseStoredTags(entry.tags).some((tag) => selected.has(tag)),
-  );
-}
-
 function dateOnly(date: Date) {
   return date.toISOString().slice(0, 10);
 }
@@ -86,7 +78,7 @@ function markdownHeader(
 
 function markdownEntry(entry: ExportEntry) {
   const title = entry.title?.trim() || '未命名记录';
-  const tags = parseStoredTags(entry.tags);
+  const tags = entry.tags;
   return [
     '---',
     `id: ${yamlString(entry.id)}`,
@@ -134,7 +126,7 @@ export function* jsonExportChunks(
   filters: ExportFilters,
   exportedAt: Date,
 ) {
-  yield `{"schemaVersion":1,"exportedAt":${JSON.stringify(exportedAt.toISOString())},"filters":${JSON.stringify({ from: filters.from ?? null, to: filters.to ?? null, tags: filters.tags })},"entries":[`;
+  yield `{"schemaVersion":2,"exportedAt":${JSON.stringify(exportedAt.toISOString())},"filters":${JSON.stringify({ from: filters.from ?? null, to: filters.to ?? null, tags: filters.tags })},"entries":[`;
   for (let index = 0; index < entries.length; index += 1) {
     yield `${index === 0 ? '' : ','}${JSON.stringify(jsonEntry(entries[index]))}`;
   }

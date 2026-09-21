@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
-import { entries } from '@/lib/db/schema';
-import { parseStoredTags } from '@/lib/tags';
+import { listActiveTagNames } from '@/lib/db/entry-tags';
 import { getSettings } from '@/lib/settings';
 import { SettingsForm } from '@/components/SettingsForm';
 
@@ -18,14 +17,11 @@ export default async function SettingsPage({
 }: {
   searchParams: Promise<{ export?: string }>;
 }) {
-  const [settings, tagRows, query] = await Promise.all([
+  const [settings, availableTags, query] = await Promise.all([
     getSettings(),
-    db.select({ tags: entries.tags }).from(entries),
+    listActiveTagNames(db),
     searchParams,
   ]);
-  const availableTags = Array.from(
-    new Set(tagRows.flatMap((row) => parseStoredTags(row.tags))),
-  ).sort((a, b) => a.localeCompare(b, 'zh-CN'));
   const exportMessage =
     EXPORT_MESSAGES[query.export as keyof typeof EXPORT_MESSAGES];
 

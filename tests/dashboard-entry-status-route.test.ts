@@ -48,6 +48,8 @@ test('status endpoint preserves a null AI status', async () => {
 test('batch status endpoint authenticates and validates ID lists', async () => {
   const fixture = await createTestDb();
   try {
+    const { syncEntryTags } = await import('@/lib/db/entry-tags');
+    await syncEntryTags(fixture.db, 'existing', ['one']);
     const { createBatchEntryStatusHandler } =
       await import('@/app/api/dashboard/entries/status/route');
     const unauthorized = createBatchEntryStatusHandler({
@@ -96,11 +98,12 @@ test('batch status endpoint returns requested fields and omits missing IDs', asy
       content: 'content',
       title: 'Title',
       summary: 'Summary',
-      tags: JSON.stringify(['one']),
       aiStatus: 'done',
       createdAt: new Date('2026-08-19T00:00:00.000Z'),
       updatedAt: new Date(),
     });
+    const { syncEntryTags } = await import('@/lib/db/entry-tags');
+    await syncEntryTags(fixture.db, 'existing', ['one']);
     const { createBatchEntryStatusHandler } =
       await import('@/app/api/dashboard/entries/status/route');
     const POST = createBatchEntryStatusHandler({

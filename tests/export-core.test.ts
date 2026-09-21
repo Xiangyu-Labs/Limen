@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import { createTestDb } from './helpers/test-db';
 import { entries } from '@/lib/db/schema';
 import {
-  filterEntriesByTags,
   jsonExportChunks,
   markdownExportChunks,
   parseExportParameters,
@@ -16,7 +15,7 @@ const baseEntry: ExportEntry = {
   content: '# raw body\n\n--- stays raw',
   title: 'Title "quoted"',
   summary: 'Line one\nline two',
-  tags: '["alpha","beta"]',
+  tags: ['alpha', 'beta'],
   source: 'web',
   aiStatus: 'done',
   createdAt: new Date('2026-02-02T00:00:00Z'),
@@ -78,16 +77,50 @@ test('date filtering is inclusive and ordering is stable', async () => {
   }
 });
 
-test('tag filtering uses OR semantics and tolerates corrupt JSON', () => {
-  const rows = [
-    baseEntry,
-    { ...baseEntry, id: 'gamma', tags: '["gamma"]' },
-    { ...baseEntry, id: 'broken', tags: '{broken' },
-  ];
-  assert.deepEqual(
-    filterEntriesByTags(rows, ['beta', 'gamma']).map((entry) => entry.id),
-    ['entry-1', 'gamma'],
-  );
+test('tag filtering uses OR semantics and runs in SQL', async () => {
+  // Previously every row was loaded and filtered in JS. It is now an indexed
+  // EXISTS against entry_tags, so this has to be exercised against a database.
+  const fixture = await createTestDb();
+  try {
+    const { syncEntryTags } = await import('@/lib/db/entry-tags');
+    const { seedEntry } = await import('./helpers/test-entries');
+    for (const [id, names] of [
+      ['alpha-beta', ['alpha', 'beta']],
+      ['gamma', ['gamma']],
+      ['untagged', []],
+    ] as const) {
+      await seedEntry(fixture.db, {
+        id,
+        createdAt: new Date('2026-02-02T00:00:00Z'),
+      });
+      if (names.length > 0) await syncEntryTags(fixture.db, id, [...names]);
+    }
+
+    const matched = await loadExportEntries(fixture.db, {
+      format: 'json',
+      from: undefined,
+      to: undefined,
+      tags: ['beta', 'gamma'],
+    });
+    assert.deepEqual(
+      matched.map((entry) => entry.id),
+      ['alpha-beta', 'gamma'],
+    );
+
+    const all = await loadExportEntries(fixture.db, {
+      format: 'json',
+      from: undefined,
+      to: undefined,
+      tags: [],
+    });
+    assert.equal(all.length, 3);
+    assert.deepEqual(all.find((entry) => entry.id === 'alpha-beta')?.tags, [
+      'alpha',
+      'beta',
+    ]);
+  } finally {
+    await fixture.cleanup();
+  }
 });
 
 test('Markdown export escapes YAML and retains the raw body', () => {
@@ -119,7 +152,8 @@ test('JSON export is versioned and preserves every backup field', () => {
     ),
   ).join('');
   const output = JSON.parse(text);
-  assert.equal(output.schemaVersion, 1);
+  // Bumped to 2: entries[].tags is now an array, not the stored JSON string.
+  assert.equal(output.schemaVersion, 2);
   assert.equal(output.exportedAt, '2026-03-01T00:00:00.000Z');
   assert.deepEqual(Object.keys(output.entries[0]), [
     'id',
@@ -133,5 +167,5 @@ test('JSON export is versioned and preserves every backup field', () => {
     'recordedAt',
     'updatedAt',
   ]);
-  assert.equal(output.entries[0].tags, '["alpha","beta"]');
+  assert.deepEqual(output.entries[0].tags, ['alpha', 'beta']);
 });

@@ -3,7 +3,6 @@ import { getSession } from '@/lib/auth/session';
 import { formatDateInTimeZone } from '@/lib/entry-date';
 import {
   createTextStream,
-  filterEntriesByTags,
   InvalidExportParametersError,
   jsonExportChunks,
   markdownExportChunks,
@@ -60,14 +59,13 @@ export function createExportRouteHandler({
         loadEntries(filters),
         loadSettings(),
       ]);
-      const filtered = filterEntriesByTags(rows, filters.tags);
-      if (filtered.length === 0) return redirectTo(request, 'empty');
+      if (rows.length === 0) return redirectTo(request, 'empty');
 
       const exportedAt = now();
       const chunks =
         filters.format === 'markdown'
-          ? markdownExportChunks(filtered, filters, exportedAt)
-          : jsonExportChunks(filtered, filters, exportedAt);
+          ? markdownExportChunks(rows, filters, exportedAt)
+          : jsonExportChunks(rows, filters, exportedAt);
       const extension = filters.format === 'markdown' ? 'md' : 'json';
       const contentType =
         filters.format === 'markdown'

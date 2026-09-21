@@ -9,7 +9,6 @@ import { EntryDetailActions } from '@/components/EntryDetailActions';
 import { Button } from '@/components/ui/button';
 import { messages } from '@/lib/messages';
 import { dashboardPath } from '@/lib/pathname';
-import { parseStoredTags } from '@/lib/tags';
 import { PendingAIRefresh } from '@/components/PendingAIRefresh';
 import { recoverStalePendingEntries } from '@/lib/ai/stale-pending';
 
@@ -18,7 +17,7 @@ export function buildEntryDetailViewModel(
     content: string;
     title: string | null;
     summary: string | null;
-    tags: string | null;
+    tags: string[];
     aiStatus: string | null;
     createdAt: Date | null;
   },
@@ -28,7 +27,6 @@ export function buildEntryDetailViewModel(
     ...entry,
     displayTitle: entry.title || copy.editor.untitledCapture,
     summary: entry.summary,
-    tags: parseStoredTags(entry.tags),
     statusLabel:
       entry.aiStatus === 'failed'
         ? copy.common.failed

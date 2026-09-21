@@ -5,7 +5,7 @@ import { db, type AppDatabase } from '@/lib/db';
 import { entries } from '@/lib/db/schema';
 import { normalizeAIStatus } from '@/lib/ai/polling';
 import { recoverStalePendingEntries } from '@/lib/ai/stale-pending';
-import { parseStoredTags } from '@/lib/tags';
+import { loadEntryTagsMap } from '@/lib/db/entry-tags';
 
 export const maxDuration = 60;
 export const preferredRegion = 'sin1';
@@ -62,12 +62,12 @@ export function createBatchEntryStatusHandler({
         aiStatus: entries.aiStatus,
         title: entries.title,
         summary: entries.summary,
-        tags: entries.tags,
       })
       .from(entries)
       .where(inArray(entries.id, ids));
 
     const rowMap = new Map(rows.map((row) => [row.id, row]));
+    const tagsById = await loadEntryTagsMap(database, ids);
     return NextResponse.json({
       entries: ids.flatMap((id) => {
         const row = rowMap.get(id);
@@ -76,7 +76,7 @@ export function createBatchEntryStatusHandler({
               {
                 ...row,
                 aiStatus: normalizeAIStatus(row.aiStatus),
-                tags: parseStoredTags(row.tags),
+                tags: tagsById.get(id) ?? [],
               },
             ]
           : [];

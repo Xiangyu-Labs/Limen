@@ -9,7 +9,7 @@ const row: ExportEntry = {
   content: 'body',
   title: null,
   summary: null,
-  tags: null,
+  tags: [],
   source: 'web',
   aiStatus: 'pending',
   createdAt: new Date('2026-07-27T00:00:00Z'),
@@ -86,7 +86,8 @@ test('export route streams complete JSON with correct headers', async () => {
     'application/json; charset=utf-8',
   );
   assert.match(response.headers.get('content-disposition') ?? '', /\.json"$/);
-  assert.equal((await response.json()).schemaVersion, 1);
+  // Bumped with the move to normalized tags; entries[].tags is an array now.
+  assert.equal((await response.json()).schemaVersion, 2);
 });
 
 test('export route hides database errors behind a settings redirect', async () => {
