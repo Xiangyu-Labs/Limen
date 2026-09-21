@@ -9,6 +9,10 @@ import { EntryDetailActions } from '@/components/EntryDetailActions';
 import { Button } from '@/components/ui/button';
 import { messages } from '@/lib/messages';
 import { dashboardPath } from '@/lib/pathname';
+import {
+  EntryTagsEditor,
+  EntryTitleEditor,
+} from '@/components/EntryMetadataEditor';
 import { PendingAIRefresh } from '@/components/PendingAIRefresh';
 import { recoverStalePendingEntries } from '@/lib/ai/stale-pending';
 
@@ -116,9 +120,11 @@ export default async function EntryDetailPage({
             </div>
 
             <div className="space-y-6">
-              <h1 className="text-3xl font-semibold leading-tight tracking-tight text-text md:text-4xl">
-                {viewModel.displayTitle}
-              </h1>
+              <EntryTitleEditor
+                entryId={entry.id}
+                title={viewModel.displayTitle}
+                locked={entry.titleLockedAt !== null}
+              />
 
               {viewModel.summary && (
                 <div className="border-l-2 border-primary pl-4">
@@ -131,18 +137,11 @@ export default async function EntryDetailPage({
                 </div>
               )}
 
-              {viewModel.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {viewModel.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center rounded-md bg-surface2 px-2 py-1 text-xs text-muted"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              )}
+              <EntryTagsEditor
+                entryId={entry.id}
+                tags={viewModel.tags}
+                locked={entry.tagsLockedAt !== null}
+              />
             </div>
           </header>
 

@@ -1,0 +1,1 @@
+ALTER TABLE "entries" ADD COLUMN "title_locked_at" timestamp with time zone;

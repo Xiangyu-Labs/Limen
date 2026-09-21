@@ -57,6 +57,13 @@
       "when": 1789982975881,
       "tag": "0007_unknown_viper",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789983537537,
+      "tag": "0008_free_snowbird",
+      "breakpoints": true
     }
   ]
 }

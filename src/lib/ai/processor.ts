@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import { z } from 'zod';
 import { db, type AppDatabase } from '@/lib/db';
 import { entries } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { normalizeTags } from '@/lib/tags';
 import { listActiveTagNames, syncEntryTags } from '@/lib/db/entry-tags';
 import { activeEntries } from '@/lib/db/entry-scope';
@@ -157,10 +157,13 @@ export function createAIProcessor({
     try {
       const tags = existingTags ?? (await getExistingTags(database));
       const aiResult = await generateMetadata(client, model, content, tags);
+      // The title is skipped when the owner has renamed the entry; the summary
+      // and status always refresh so the lifecycle still completes.
       await database
         .update(entries)
         .set({
-          title: aiResult.title,
+          title: sql`case when ${entries.titleLockedAt} is null
+            then ${aiResult.title} else ${entries.title} end`,
           summary: aiResult.summary,
           aiStatus: 'done',
           updatedAt: new Date(),

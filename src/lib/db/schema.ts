@@ -26,8 +26,14 @@ export const entries = pgTable(
     // Soft delete. Rows with a value live in the recycle bin for 30 days and
     // must be excluded from every user-facing read; see lib/db/entry-scope.ts.
     deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
-    // Set when the owner edits tags by hand; the AI then stops overwriting
-    // them. A timestamp rather than a flag so "when" is recoverable.
+    // Set when the owner edits these by hand; the AI then stops overwriting
+    // them. Timestamps rather than flags so "when" stays recoverable, and two
+    // columns rather than one so renaming an entry does not also freeze its
+    // tags.
+    titleLockedAt: timestamp('title_locked_at', {
+      withTimezone: true,
+      mode: 'date',
+    }),
     tagsLockedAt: timestamp('tags_locked_at', {
       withTimezone: true,
       mode: 'date',

@@ -12,6 +12,7 @@ export type EntryRecord = {
   tags: string[];
   source: string | null;
   aiStatus: string | null;
+  titleLockedAt: Date | null;
   tagsLockedAt: Date | null;
   deletedAt: Date | null;
   createdAt: Date;
@@ -27,6 +28,7 @@ const ENTRY_COLUMNS = {
   tags: entryTagNamesSql,
   source: entries.source,
   aiStatus: entries.aiStatus,
+  titleLockedAt: entries.titleLockedAt,
   tagsLockedAt: entries.tagsLockedAt,
   deletedAt: entries.deletedAt,
   createdAt: entries.createdAt,

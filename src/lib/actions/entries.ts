@@ -24,6 +24,9 @@ export async function createEntry(formData: FormData) {
 export const deleteEntry = entryActions.deleteEntry;
 export const restoreEntry = entryActions.restoreEntry;
 export const purgeEntry = entryActions.purgeEntry;
+export const setEntryTags = entryActions.setEntryTags;
+export const setEntryTitle = entryActions.setEntryTitle;
+export const unlockEntryMetadata = entryActions.unlockEntryMetadata;
 export async function updateEntry(id: string, formData: FormData) {
   return entryActions.updateEntry(id, formData);
 }

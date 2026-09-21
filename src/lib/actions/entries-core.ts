@@ -7,6 +7,11 @@ import { activeEntries, trashedEntries } from '@/lib/db/entry-scope';
 import { dashboardPath, entryDetailPath, trashPath } from '@/lib/pathname';
 import { messages } from '@/lib/messages';
 import { findActiveEntry } from '@/lib/db/entries-repo';
+import { syncEntryTags } from '@/lib/db/entry-tags';
+import {
+  normalizeTagsInput,
+  normalizeTitleInput,
+} from '@/lib/entry-metadata-editor';
 import {
   InputValidationError,
   normalizeEntryIds,
@@ -136,6 +141,70 @@ export function createEntryActions({
       if (purged.length === 0)
         return { ok: false, error: messages.common.entryNotFound };
       revalidatePath(trashPath());
+      return { ok: true, data: { id } };
+    },
+
+    /**
+     * Hand-edited tags. Sets tags_locked_at so the AI stops overwriting them;
+     * syncEntryTags is called with respectLock: false because this IS the
+     * owner speaking.
+     */
+    async setEntryTags(
+      id: string,
+      names: string[],
+    ): Promise<ActionResult<{ id: string; tags: string[] }>> {
+      await authorize();
+      const normalized = normalizeTagsInput(names);
+      const entry = await findActiveEntry(id, db);
+      if (!entry) return { ok: false, error: messages.common.entryNotFound };
+
+      await syncEntryTags(db, id, normalized, { respectLock: false });
+      await db
+        .update(entries)
+        .set({ tagsLockedAt: new Date(), updatedAt: new Date() })
+        .where(activeEntries(eq(entries.id, id)));
+
+      revalidatePath(dashboardPath());
+      revalidatePath(entryDetailPath(id));
+      return { ok: true, data: { id, tags: normalized } };
+    },
+
+    async setEntryTitle(
+      id: string,
+      title: unknown,
+    ): Promise<ActionResult<{ id: string; title: string | null }>> {
+      await authorize();
+      const normalized = normalizeTitleInput(title);
+      const updated = await db
+        .update(entries)
+        .set({
+          title: normalized,
+          titleLockedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(activeEntries(eq(entries.id, id)))
+        .returning({ id: entries.id });
+      if (updated.length === 0)
+        return { ok: false, error: messages.common.entryNotFound };
+
+      revalidatePath(dashboardPath());
+      revalidatePath(entryDetailPath(id));
+      return { ok: true, data: { id, title: normalized } };
+    },
+
+    /** Hands title and tags back to the AI on the next regeneration. */
+    async unlockEntryMetadata(
+      id: string,
+    ): Promise<ActionResult<{ id: string }>> {
+      await authorize();
+      const updated = await db
+        .update(entries)
+        .set({ titleLockedAt: null, tagsLockedAt: null, updatedAt: new Date() })
+        .where(activeEntries(eq(entries.id, id)))
+        .returning({ id: entries.id });
+      if (updated.length === 0)
+        return { ok: false, error: messages.common.entryNotFound };
+      revalidatePath(entryDetailPath(id));
       return { ok: true, data: { id } };
     },
 
