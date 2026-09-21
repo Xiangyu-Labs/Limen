@@ -9,16 +9,8 @@
 
 ### 执行迁移
 
-迁移使用 Neon HTTP 驱动，不会在构建或冷启动时自动执行。
-
-> **执行前先在 Neon 开一个 branch。** 迁移 `0005` 会把历史的 `entries.tags` JSON
-> 回填到 `tags`/`entry_tags` 两张表，`0006` 随后删除旧列，`0007` 加入软删除。
-> Neon HTTP 驱动不会为单个迁移文件内的多条语句提供事务，因此回滚依赖 branch 或
-> PITR，而不是 `down` 脚本。
->
-> 回填使用 `pg_input_is_valid`，要求 **PostgreSQL 16 及以上**（Neon 与测试用的
-> PGlite 均满足）。回填对损坏的历史 JSON 是容错的，两条语句都可重复执行。
-> 如需把删除旧列推迟一个版本，跳过 `0006` 即可，应用代码已不再读写该列。
+Vercel 项目的 Build Command 是 `npm run db:migrate && npm run build`，**迁移会在每次
+部署构建时自动执行**，使用该环境配置的 `DATABASE_URL`。本地手动执行同一命令：
 
 ```bash
 npm run db:migrate
