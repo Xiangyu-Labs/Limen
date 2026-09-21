@@ -3,7 +3,7 @@ import { entries } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import ReactMarkdown from 'react-markdown';
+import { MarkdownContent } from '@/components/MarkdownContent';
 import { ArrowLeft, Calendar, Loader2, Sparkles } from 'lucide-react';
 import { FormattedDate } from '@/components/FormattedDate';
 import { EntryDetailActions } from '@/components/EntryDetailActions';
@@ -139,9 +139,7 @@ export default async function EntryDetailPage({
             </div>
           </header>
 
-          <div className="prose prose-lg max-w-none leading-8 text-text/90 prose-headings:text-text prose-strong:text-text prose-code:text-primary">
-            <ReactMarkdown>{entry.content}</ReactMarkdown>
-          </div>
+          <MarkdownContent>{entry.content}</MarkdownContent>
         </div>
       </article>
     </div>
