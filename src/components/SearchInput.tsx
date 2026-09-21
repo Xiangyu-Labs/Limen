@@ -9,11 +9,16 @@ export function normalizeSearchQuery(query: string) {
   return query.trim();
 }
 
+export const SEARCH_DEBOUNCE_MS = 300;
+
 export function buildSearchHref(currentUrl: string, query: string) {
   const normalized = normalizeSearchQuery(query);
   const url = new URL(currentUrl);
   const params = new URLSearchParams(url.searchParams);
   params.delete('date');
+  // A new search starts a new result set; keeping a cursor or a tag filter
+  // would silently scope it.
+  params.delete('cursor');
   if (normalized) params.set('q', normalized);
   else params.delete('q');
   const serialized = params.toString();
@@ -41,6 +46,21 @@ function SearchForm({
   function navigate(value: string) {
     startTransition(() => router.push(buildSearchHref(currentUrl, value)));
   }
+
+  // Searching as you type; Enter still submits immediately.
+  useEffect(() => {
+    if (normalizeSearchQuery(query) === normalizeSearchQuery(initialQuery)) {
+      return;
+    }
+    const timeout = window.setTimeout(
+      () => navigate(query),
+      SEARCH_DEBOUNCE_MS,
+    );
+    return () => window.clearTimeout(timeout);
+    // navigate is stable enough here: it only closes over currentUrl, which
+    // changes only when the URL we are already navigating to changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, initialQuery, currentUrl]);
   return (
     <form
       onSubmit={(event) => {

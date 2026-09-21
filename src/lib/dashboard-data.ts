@@ -13,6 +13,32 @@ import { recoverStalePendingEntries } from '@/lib/ai/stale-pending';
 import { activeEntries } from '@/lib/db/entry-scope';
 
 export const DASHBOARD_PREVIEW_LENGTH = 280;
+// Characters of lead-in kept before a search hit, so the match lands in view
+// with some context rather than at the very start of the snippet.
+const SEARCH_SNIPPET_LEAD = 60;
+
+/**
+ * The preview column.
+ *
+ * Without a query this is the summary (falling back to the body). With one it
+ * becomes a window around the first match in the body, because a keyword that
+ * hits at character 3000 is invisible in a summary prefix and the result looks
+ * unrelated to what was typed.
+ */
+function previewSql(query?: string) {
+  if (!query) {
+    return sql<string>`left(coalesce(${entries.summary}, ${entries.content}), ${DASHBOARD_PREVIEW_LENGTH})`;
+  }
+  const offset = sql`strpos(lower(${entries.content}), lower(${query}))`;
+  return sql<string>`case
+    when ${offset} > 0 then
+      case when ${offset} > ${SEARCH_SNIPPET_LEAD} + 1 then '…' else '' end
+      || substring(${entries.content}
+           from greatest(1, ${offset} - ${SEARCH_SNIPPET_LEAD})
+           for ${DASHBOARD_PREVIEW_LENGTH})
+    else left(coalesce(${entries.summary}, ${entries.content}), ${DASHBOARD_PREVIEW_LENGTH})
+  end`;
+}
 
 export type DashboardEntry = {
   id: string;
@@ -128,7 +154,7 @@ export async function loadDashboardEntriesPage(
     .select({
       id: entries.id,
       title: entries.title,
-      preview: sql<string>`left(coalesce(${entries.summary}, ${entries.content}), ${DASHBOARD_PREVIEW_LENGTH})`,
+      preview: previewSql(normalizeSearchQuery(q)),
       tags: entryTagNamesSql,
       aiStatus: entries.aiStatus,
       createdAt: entries.createdAt,

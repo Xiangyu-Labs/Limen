@@ -75,6 +75,15 @@ export function normalizeSearchQuery(value: unknown): string | undefined {
   return query;
 }
 
+export function normalizeTagFilter(value: unknown): string | undefined {
+  if (value === null || value === undefined) return undefined;
+  if (typeof value !== 'string') throw new InputValidationError('标签无效');
+  const tag = value.trim();
+  if (!tag) return undefined;
+  if (tag.length > 50) throw new InputValidationError('标签最多 50 字');
+  return tag;
+}
+
 export function normalizeEntryIds(value: unknown): string[] {
   if (!Array.isArray(value)) throw new InputValidationError('条目 ID 列表无效');
   const ids = Array.from(

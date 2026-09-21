@@ -4,7 +4,11 @@ import {
   loadDashboardEntriesPage,
 } from '@/lib/dashboard-data';
 import { getSession } from '@/lib/auth/session';
-import { InputValidationError, normalizeSearchQuery } from '@/lib/validation';
+import {
+  InputValidationError,
+  normalizeSearchQuery,
+  normalizeTagFilter,
+} from '@/lib/validation';
 import { decodeEntryCursor } from '@/lib/pagination';
 
 export const maxDuration = 60;
@@ -17,9 +21,14 @@ export async function GET(request: Request) {
   try {
     const params = new URL(request.url).searchParams;
     const q = normalizeSearchQuery(params.get('q'));
+    const tag = normalizeTagFilter(params.get('tag'));
     const cursorValue = params.get('cursor') ?? undefined;
     decodeEntryCursor(cursorValue);
-    const page = await loadDashboardEntriesPage({ q, cursor: cursorValue });
+    const page = await loadDashboardEntriesPage({
+      q,
+      tag,
+      cursor: cursorValue,
+    });
     return NextResponse.json(buildTimelineEntriesPage(page));
   } catch (error) {
     if (error instanceof InputValidationError) {

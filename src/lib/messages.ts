@@ -21,6 +21,9 @@ export const messages = {
     endOfTimeline: '已经到底了',
     loadFailed: '加载失败，请重试',
     retryLoad: '重新加载',
+    backToTop: '回到顶部',
+    filteredByTag: (tag: string) => `标签：${tag}`,
+    clearTagFilter: '清除标签筛选',
   },
   editor: {
     newCapture: '新建',
