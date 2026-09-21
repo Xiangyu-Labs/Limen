@@ -51,8 +51,25 @@ test('settings page maps all export redirect states to feedback', () => {
     new URL('../src/app/(dashboard)/settings/page.tsx', import.meta.url),
     'utf8',
   );
-  assert.match(source, /invalid:/);
-  assert.match(source, /error:/);
-  assert.match(source, /empty:/);
+  // The copy moved into messages.ts; the page still renders the no-JS
+  // fallback's ?export= feedback.
+  assert.match(source, /messages\.settings\.exportFailed/);
+  assert.match(source, /query\.export/);
   assert.match(source, /role="alert"/);
+  for (const state of ['invalid', 'error', 'empty', 'unauthorized'] as const) {
+    assert.ok(messages.settings.exportFailed[state], state);
+  }
+});
+
+test('the export form keeps its selection when a download fails', () => {
+  const source = readFileSync(
+    new URL('../src/components/SettingsForm.tsx', import.meta.url),
+    'utf8',
+  );
+  // The native GET form stays as the no-JavaScript path; onSubmit enhances it
+  // so a failure is reported in place instead of redirecting to a blank form.
+  assert.match(source, /action="\/api\/export"/);
+  assert.match(source, /method="get"/);
+  assert.match(source, /onSubmit=\{downloadExport\}/);
+  assert.match(source, /accept: 'application\/json'/);
 });

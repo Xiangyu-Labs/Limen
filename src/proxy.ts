@@ -1,5 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getSession } from '@/lib/auth/session';
+import {
+  createSession,
+  getSession,
+  SESSION_COOKIE_NAME,
+  sessionCookieOptions,
+  sessionExpiry,
+  shouldRenewSession,
+} from '@/lib/auth/session';
 import { loginPath, stripLegacyLocalePath } from '@/lib/pathname';
 import {
   applySecurityHeaders,
@@ -58,9 +65,10 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   if (shouldBypassProxy(pathname)) return NextResponse.next();
 
+  const session = await getSession();
   const decision = evaluateProxyRequest({
     pathname,
-    hasSession: Boolean(await getSession()),
+    hasSession: Boolean(session),
   });
   const nonce = createRequestNonce();
   const contentSecurityPolicy = buildContentSecurityPolicy(nonce);
@@ -76,6 +84,15 @@ export async function proxy(request: NextRequest) {
   } else {
     response = NextResponse.next({ request: { headers: requestHeaders } });
   }
+  // Sliding expiry: an active reader never hits the 7-day wall.
+  if (shouldRenewSession(session)) {
+    response.cookies.set(
+      SESSION_COOKIE_NAME,
+      await createSession(),
+      sessionCookieOptions(sessionExpiry()),
+    );
+  }
+
   applySecurityHeaders(response.headers, contentSecurityPolicy);
   return response;
 }

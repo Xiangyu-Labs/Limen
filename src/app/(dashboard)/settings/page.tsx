@@ -3,23 +3,27 @@ import { db } from '@/lib/db';
 import { listActiveTagNames } from '@/lib/db/entry-tags';
 import { getSettings } from '@/lib/settings';
 import { SettingsForm } from '@/components/SettingsForm';
+import { messages } from '@/lib/messages';
+import { loadWritingStats } from '@/lib/stats-data';
+import { formatDateInTimeZone } from '@/lib/entry-date';
 
 export const metadata: Metadata = { title: '设置' };
 
-const EXPORT_MESSAGES = {
-  invalid: '导出条件无效，请检查日期和格式。',
-  error: '导出失败，请稍后重试。',
-  empty: '没有符合条件的记录。',
-} as const;
+// Still used by the no-JavaScript fallback, which is redirected here.
+const EXPORT_MESSAGES = messages.settings.exportFailed;
 
 export default async function SettingsPage({
   searchParams,
 }: {
   searchParams: Promise<{ export?: string }>;
 }) {
-  const [settings, availableTags, query] = await Promise.all([
+  const [settings, availableTags, stats, query] = await Promise.all([
     getSettings(),
     listActiveTagNames(db),
+    loadWritingStats(
+      db,
+      formatDateInTimeZone(new Date(), (await getSettings()).timeZone),
+    ),
     searchParams,
   ]);
   const exportMessage =
@@ -38,7 +42,11 @@ export default async function SettingsPage({
           {exportMessage}
         </p>
       ) : null}
-      <SettingsForm settings={settings} availableTags={availableTags} />
+      <SettingsForm
+        settings={settings}
+        availableTags={availableTags}
+        stats={stats}
+      />
     </div>
   );
 }

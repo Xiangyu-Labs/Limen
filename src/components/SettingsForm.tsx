@@ -1,8 +1,11 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { Download, Save, Trash2 } from 'lucide-react';
+import { Download, Loader2, Save, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import type { WritingStats } from '@/lib/stats';
+import { LogoutButton } from '@/components/LogoutButton';
 import { messages } from '@/lib/messages';
 import { trashPath } from '@/lib/pathname';
 import { saveSettings } from '@/lib/actions/settings';
@@ -77,14 +80,61 @@ function SegmentedControl({
 export function SettingsForm({
   settings,
   availableTags,
+  stats,
 }: {
   settings: AppSettings;
   availableTags: string[];
+  stats: WritingStats;
 }) {
   const [formSettings, setFormSettings] = useState(settings);
+  const [isExporting, setIsExporting] = useState(false);
   const [exportFormat, setExportFormat] = useState(
     settings.defaultExportFormat,
   );
+
+  /**
+   * Progressive enhancement over the native GET form, which stays as the
+   * no-JavaScript path. Submitting through fetch keeps the chosen date range
+   * and tags on screen when the export turns up empty or fails — the redirect
+   * used to throw the whole selection away.
+   */
+  async function downloadExport(event: FormEvent<HTMLFormElement>) {
+    const form = event.currentTarget;
+    event.preventDefault();
+    const params = new URLSearchParams(
+      new FormData(form) as unknown as Record<string, string>,
+    );
+    setIsExporting(true);
+    try {
+      const response = await fetch(`/api/export?${params}`, {
+        headers: { accept: 'application/json' },
+      });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as {
+          error?: keyof typeof messages.settings.exportFailed;
+        } | null;
+        toast.error(
+          messages.settings.exportFailed[body?.error ?? 'error'] ??
+            messages.settings.exportFailed.error,
+        );
+        return;
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download =
+        response.headers
+          .get('content-disposition')
+          ?.match(/filename="([^"]+)"/)?.[1] ?? 'limen-export';
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error(messages.settings.exportFailed.error);
+    } finally {
+      setIsExporting(false);
+    }
+  }
   const [state, action, pending] = useActionState(
     async (
       previousState: ActionResult<AppSettings> | undefined,
@@ -101,6 +151,37 @@ export function SettingsForm({
   );
   return (
     <div className="space-y-10">
+      <section aria-labelledby="stats-heading" className="space-y-5">
+        <div className="border-b border-border pb-3">
+          <h2 id="stats-heading" className="text-lg font-semibold">
+            {messages.stats.heading}
+          </h2>
+        </div>
+        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {(
+            [
+              [messages.stats.totalEntries, stats.totalEntries],
+              [messages.stats.currentStreak, stats.currentStreak],
+              [messages.stats.entriesThisYear, stats.entriesThisYear],
+              [
+                messages.stats.totalCharacters,
+                stats.totalCharacters.toLocaleString('zh-CN'),
+              ],
+            ] as const
+          ).map(([label, value]) => (
+            <div
+              key={label}
+              className="rounded-lg border border-border bg-surface px-4 py-3"
+            >
+              <dt className="text-xs text-muted">{label}</dt>
+              <dd className="mt-1 text-xl font-semibold tabular-nums text-text">
+                {value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
       <section aria-labelledby="appearance-heading" className="space-y-5">
         <div className="border-b border-border pb-3">
           <h2 id="appearance-heading" className="text-lg font-semibold">
@@ -201,7 +282,12 @@ export function SettingsForm({
             数据导出
           </h2>
         </div>
-        <form action="/api/export" method="get" className="space-y-6">
+        <form
+          action="/api/export"
+          method="get"
+          onSubmit={downloadExport}
+          className="space-y-6"
+        >
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium">格式</legend>
             <SegmentedControl
@@ -240,9 +326,9 @@ export function SettingsForm({
               </div>
             </fieldset>
           ) : null}
-          <Button type="submit">
-            <Download />
-            下载导出文件
+          <Button type="submit" disabled={isExporting}>
+            {isExporting ? <Loader2 className="animate-spin" /> : <Download />}
+            {isExporting ? messages.settings.exporting : '下载导出文件'}
           </Button>
         </form>
       </section>
@@ -260,6 +346,15 @@ export function SettingsForm({
             {messages.trash.title}
           </Link>
         </Button>
+      </section>
+
+      <section aria-labelledby="account-heading" className="space-y-5">
+        <div className="border-b border-border pb-3">
+          <h2 id="account-heading" className="text-lg font-semibold">
+            {messages.settings.signOutHeading}
+          </h2>
+        </div>
+        <LogoutButton />
       </section>
     </div>
   );

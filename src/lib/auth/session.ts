@@ -6,6 +6,23 @@ const SESSION_ISSUER = 'limen';
 const SESSION_AUDIENCE = 'limen-web';
 const SESSION_SUBJECT = 'owner';
 export const SESSION_DURATION_SECONDS = 7 * 24 * 60 * 60;
+/**
+ * Re-sign a session once it has less than this left.
+ *
+ * Without renewal the cookie is a hard 7-day timer, so someone writing every
+ * day still gets logged out every week for no reason. Renewing only in the
+ * last third keeps the number of re-signs low.
+ */
+export const SESSION_RENEW_THRESHOLD_SECONDS = 3 * 24 * 60 * 60;
+
+export function shouldRenewSession(
+  payload: { exp?: number } | null | undefined,
+  now = new Date(),
+) {
+  if (!payload?.exp) return false;
+  const remaining = payload.exp - Math.floor(now.getTime() / 1_000);
+  return remaining > 0 && remaining < SESSION_RENEW_THRESHOLD_SECONDS;
+}
 export const SESSION_COOKIE_NAME =
   process.env.NODE_ENV === 'production'
     ? '__Host-limen-session'

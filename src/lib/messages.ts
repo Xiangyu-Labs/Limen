@@ -73,6 +73,24 @@ export const messages = {
     metadataSaved: '已保存',
     metadataSaveFailed: '保存失败，请重试',
   },
+  stats: {
+    heading: '写作统计',
+    totalEntries: '总篇数',
+    totalCharacters: '总字数',
+    entriesThisYear: '今年',
+    currentStreak: '连续天数',
+    unit: (value: number) => `${value}`,
+  },
+  settings: {
+    exportFailed: {
+      invalid: '导出条件无效，请检查日期和格式。',
+      error: '导出失败，请稍后重试。',
+      empty: '没有符合条件的记录。',
+      unauthorized: '登录已过期，请重新登录。',
+    },
+    exporting: '正在导出',
+    signOutHeading: '账号',
+  },
   trash: {
     title: '回收站',
     description: '删除的记录会在这里保留 30 天。',
@@ -101,6 +119,8 @@ export const messages = {
     submitIdle: '进入',
     submitLoading: '进入中...',
     password: '密码',
+    showPassword: '显示密码',
+    hidePassword: '隐藏密码',
     unexpectedError: '发生了意外错误',
     rateLimited: (remaining: string) => `尝试次数过多，请 ${remaining} 后再试`,
   },

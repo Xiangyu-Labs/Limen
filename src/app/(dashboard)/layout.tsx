@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { PlusCircle, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { LogoutButton } from '@/components/LogoutButton';
 import { messages } from '@/lib/messages';
 import {
   dashboardPath,
@@ -58,7 +57,6 @@ export default async function DashboardLayout({
                   <span>{messages.common.new}</span>
                 </Link>
               </Button>
-              <LogoutButton />
             </div>
           </div>
         </div>

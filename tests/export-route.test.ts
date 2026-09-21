@@ -72,7 +72,8 @@ test('export route streams Markdown with safe headers and timezone filename', as
   );
   assert.equal(
     response.headers.get('content-disposition'),
-    'attachment; filename="limen-export-2026-07-28.md"',
+    // The time is part of the name so two exports in a day do not collide.
+    'attachment; filename="limen-export-2026-07-28-0030.md"',
   );
   assert.match(await response.text(), /Limen 日记导出/);
 });

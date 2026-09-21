@@ -8,6 +8,10 @@ import { PendingActionButton } from '@/components/PendingActionButton';
 import { messages } from '@/lib/messages';
 import { loginPath } from '@/lib/pathname';
 
+/**
+ * Lives on the settings page rather than the header, where it sat next to 新建
+ * with no confirmation — an easy mis-tap on mobile that costs a password entry.
+ */
 export function LogoutButton() {
   const router = useRouter();
 
@@ -28,15 +32,21 @@ export function LogoutButton() {
 
   return (
     <PendingActionButton
-      variant="ghost"
-      size="sm"
+      variant="secondary"
       type="button"
       action={handleLogout}
-      className="h-10 w-10 p-0 text-muted hover:text-danger"
-      title={messages.common.logout}
-      aria-label={messages.common.logout}
-      idleContent={<LogOut className="h-5 w-5" />}
-      pendingContent={<Loader2 className="h-5 w-5 animate-spin" />}
+      idleContent={
+        <>
+          <LogOut className="h-4 w-4" />
+          {messages.common.logout}
+        </>
+      }
+      pendingContent={
+        <>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          {messages.common.logout}
+        </>
+      }
     />
   );
 }

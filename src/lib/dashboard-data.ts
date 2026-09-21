@@ -9,10 +9,24 @@ import {
   parseTagNames,
 } from '@/lib/db/entry-tags';
 import { messages } from '@/lib/messages';
-import { recoverStalePendingEntries } from '@/lib/ai/stale-pending';
+import { recoverStalePendingEntriesThrottled } from '@/lib/ai/stale-pending';
+import { after } from 'next/server';
 import { activeEntries } from '@/lib/db/entry-scope';
 
 export const DASHBOARD_PREVIEW_LENGTH = 280;
+
+/**
+ * Recovery is a write, and this is a read path, so it must not sit in front of
+ * the response. after() runs it once the page has been sent.
+ */
+function scheduleRecovery(database: AppDatabase) {
+  try {
+    after(() => recoverStalePendingEntriesThrottled(database));
+  } catch {
+    // after() is only available inside a request; tests call these loaders
+    // directly, where skipping the sweep is correct.
+  }
+}
 // Characters of lead-in kept before a search hit, so the match lands in view
 // with some context rather than at the very start of the snippet.
 const SEARCH_SNIPPET_LEAD = 60;
@@ -149,7 +163,7 @@ export async function loadDashboardEntriesPage(
   { q, tag, cursor, limit = 20 }: EntryFilters & { limit?: number },
   database: AppDatabase = db,
 ): Promise<DashboardEntriesPage> {
-  await recoverStalePendingEntries(database);
+  scheduleRecovery(database);
   const rows = await database
     .select({
       id: entries.id,
@@ -199,7 +213,7 @@ export async function loadApiEntriesPage(
   },
   database: AppDatabase = db,
 ) {
-  await recoverStalePendingEntries(database);
+  scheduleRecovery(database);
   const rows = await database
     .select({
       id: entries.id,

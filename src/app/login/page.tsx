@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { login } from '@/lib/auth/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +28,7 @@ function LoginFields({
   const [retryAfterSeconds, setRetryAfterSeconds] = useState(() =>
     state && !state.ok ? (state.retryAfterSeconds ?? 0) : 0,
   );
+  const [revealed, setRevealed] = useState(false);
   const blocked = retryAfterSeconds > 0;
 
   useEffect(() => {
@@ -47,21 +48,39 @@ function LoginFields({
 
   return (
     <>
-      <div>
+      <div className="relative">
         <label htmlFor="login-password" className="sr-only">
           {messages.login.password}
         </label>
         <Input
           id="login-password"
           name="password"
-          type="password"
+          type={revealed ? 'text' : 'password'}
           required
           autoComplete="current-password"
           autoFocus
           disabled={isPending || blocked}
-          className="h-12 text-center text-lg"
+          className="h-12 px-12 text-center text-lg"
           placeholder="密码"
         />
+        {/* Typing a long password blind on a phone means starting over on
+            every mistype. */}
+        <button
+          type="button"
+          onClick={() => setRevealed((current) => !current)}
+          disabled={isPending || blocked}
+          aria-label={
+            revealed ? messages.login.hidePassword : messages.login.showPassword
+          }
+          aria-pressed={revealed}
+          className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted hover:bg-surface2 hover:text-text disabled:opacity-50"
+        >
+          {revealed ? (
+            <EyeOff className="h-4 w-4" />
+          ) : (
+            <Eye className="h-4 w-4" />
+          )}
+        </button>
       </div>
       {error ? (
         <div
