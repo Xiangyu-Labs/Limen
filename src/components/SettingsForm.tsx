@@ -1,7 +1,10 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { Download, Save } from 'lucide-react';
+import Link from 'next/link';
+import { Download, Save, Trash2 } from 'lucide-react';
+import { messages } from '@/lib/messages';
+import { trashPath } from '@/lib/pathname';
 import { saveSettings } from '@/lib/actions/settings';
 import type { AppSettings } from '@/lib/settings-core';
 import type { ActionResult } from '@/lib/actions/result';
@@ -242,6 +245,21 @@ export function SettingsForm({
             下载导出文件
           </Button>
         </form>
+      </section>
+
+      <section aria-labelledby="trash-heading" className="space-y-5">
+        <div className="border-b border-border pb-3">
+          <h2 id="trash-heading" className="text-lg font-semibold">
+            {messages.trash.title}
+          </h2>
+        </div>
+        <p className="text-sm text-muted">{messages.trash.description}</p>
+        <Button variant="secondary" asChild>
+          <Link href={trashPath()}>
+            <Trash2 />
+            {messages.trash.title}
+          </Link>
+        </Button>
       </section>
     </div>
   );

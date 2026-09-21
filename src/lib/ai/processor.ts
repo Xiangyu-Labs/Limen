@@ -5,6 +5,7 @@ import { entries } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { normalizeTags } from '@/lib/tags';
 import { listActiveTagNames, syncEntryTags } from '@/lib/db/entry-tags';
+import { activeEntries } from '@/lib/db/entry-scope';
 
 const AI_CHUNK_LENGTH = 30_000;
 const CHUNK_CONCURRENCY = 3;
@@ -164,7 +165,7 @@ export function createAIProcessor({
           aiStatus: 'done',
           updatedAt: new Date(),
         })
-        .where(eq(entries.id, entryId));
+        .where(activeEntries(eq(entries.id, entryId)));
       // Respects tags_locked_at: hand-picked tags are never overwritten,
       // while title and summary still refresh.
       await syncEntryTags(database, entryId, aiResult.tags);
@@ -173,7 +174,7 @@ export function createAIProcessor({
       await database
         .update(entries)
         .set({ aiStatus: 'failed', updatedAt: new Date() })
-        .where(eq(entries.id, entryId));
+        .where(activeEntries(eq(entries.id, entryId)));
     }
   };
 }

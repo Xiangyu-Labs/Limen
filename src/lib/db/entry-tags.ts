@@ -2,6 +2,7 @@ import { inArray, sql, type SQL } from 'drizzle-orm';
 import type { AppDatabase } from '@/lib/db';
 import { entries, entryTags, tags } from '@/lib/db/schema';
 import { normalizeTags } from '@/lib/tags';
+import { activeEntries } from '@/lib/db/entry-scope';
 
 /**
  * A correlated subquery returning an entry's tag names as a JSON array string.
@@ -59,7 +60,10 @@ export async function listActiveTagNames(
     .selectDistinct({ name: tags.name })
     .from(tags)
     .innerJoin(entryTags, sql`${entryTags.tagId} = ${tags.id}`)
-    .innerJoin(entries, sql`${entries.id} = ${entryTags.entryId}`);
+    .innerJoin(entries, sql`${entries.id} = ${entryTags.entryId}`)
+    // Without this a trashed entry's tags keep feeding the AI prompt and keep
+    // showing up as export checkboxes that can never match anything.
+    .where(activeEntries());
   // Sorted in JS: Postgres collation will not reproduce pinyin order, and this
   // list is small enough that it does not matter.
   return rows

@@ -223,7 +223,8 @@ test('delete and regenerate return structured results', async () => {
     });
     assert.deepEqual(await actions.deleteEntry('delete-me'), {
       ok: true,
-      data: { id: 'delete-me', redirectTo: '/' },
+      // The title rides along so the undo toast can name the entry.
+      data: { id: 'delete-me', title: null, redirectTo: '/' },
     });
     assert.deepEqual(await actions.regenerateEntryMetadata('regenerate-me'), {
       ok: true,

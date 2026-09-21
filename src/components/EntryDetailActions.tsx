@@ -6,7 +6,18 @@ import { useRouter } from 'next/navigation';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import { Loader2, Pencil, Sparkles, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { deleteEntry, regenerateEntryMetadata } from '@/lib/actions/entries';
+import { mutate } from 'swr';
+import {
+  deleteEntry,
+  regenerateEntryMetadata,
+  restoreEntry,
+} from '@/lib/actions/entries';
+import { isTimelineCacheKey } from '@/lib/timeline/cache';
+import {
+  UNDO_TOAST_DURATION_MS,
+  buildDeletedToastMessage,
+  createUndoHandler,
+} from '@/lib/trash/undo-toast';
 import { Button } from '@/components/ui/button';
 import { dashboardPath, entryEditPath } from '@/lib/pathname';
 import { messages } from '@/lib/messages';
@@ -41,6 +52,21 @@ export function EntryDetailActions({
     });
   }
 
+  // Both a delete and an undo have to drop the cached timeline pages.
+  // EntriesTimelineClient uses revalidateFirstPage: false against a
+  // module-global SWR cache, so page 0 would otherwise come back unchanged.
+  const invalidateTimeline = () =>
+    mutate(isTimelineCacheKey, undefined, { revalidate: true });
+
+  const undo = createUndoHandler({
+    restore: restoreEntry,
+    invalidate: invalidateTimeline,
+    refresh: () => router.refresh(),
+    notifySuccess: (message) => toast.success(message),
+    notifyError: (message) => toast.error(message),
+    copy: messages,
+  });
+
   function remove() {
     startDeletion(async () => {
       try {
@@ -49,10 +75,20 @@ export function EntryDetailActions({
           toast.error(result.error);
           return;
         }
-        toast.success('记录已删除');
         setDeleteDialogOpen(false);
+        await invalidateTimeline();
         router.replace(dashboardPath());
         router.refresh();
+        // AppToaster lives in the root layout, so this survives the navigation
+        // above. The undo must stay outside startDeletion: by the time it runs,
+        // this component is gone.
+        toast.success(buildDeletedToastMessage(result.data.title, messages), {
+          duration: UNDO_TOAST_DURATION_MS,
+          action: {
+            label: messages.trash.undo,
+            onClick: () => void undo(result.data.id),
+          },
+        });
       } catch {
         toast.error('删除失败，请重试');
       }
@@ -120,10 +156,10 @@ export function EntryDetailActions({
           <AlertDialog.Overlay className="fixed inset-0 z-40 bg-black/40" />
           <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(92vw,26rem)] -translate-x-1/2 -translate-y-1/2 rounded-md border border-border bg-surface p-5 shadow-xl">
             <AlertDialog.Title className="text-base font-semibold text-text">
-              删除这条记录？
+              {messages.trash.deleteConfirmTitle}
             </AlertDialog.Title>
             <AlertDialog.Description className="mt-2 text-sm leading-6 text-muted">
-              删除后无法恢复。
+              {messages.trash.deleteConfirmBody}
             </AlertDialog.Description>
             <div className="mt-5 flex justify-end gap-2">
               <AlertDialog.Cancel asChild disabled={isDeleting}>

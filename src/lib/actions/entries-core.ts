@@ -3,7 +3,10 @@ import { entries } from '@/lib/db/schema';
 import { processAIEntry as runAI } from '@/lib/ai/processor';
 import { revalidatePath as nextRevalidatePath } from 'next/cache';
 import { eq, inArray } from 'drizzle-orm';
-import { dashboardPath, entryDetailPath } from '@/lib/pathname';
+import { activeEntries, trashedEntries } from '@/lib/db/entry-scope';
+import { dashboardPath, entryDetailPath, trashPath } from '@/lib/pathname';
+import { messages } from '@/lib/messages';
+import { findActiveEntry } from '@/lib/db/entries-repo';
 import {
   InputValidationError,
   normalizeEntryIds,
@@ -82,17 +85,58 @@ export function createEntryActions({
       return { ok: true, data: { id, redirectTo: dashboardPath() } };
     },
 
+    /** Soft delete: the entry moves to the recycle bin for 30 days. */
     async deleteEntry(
       id: string,
-    ): Promise<ActionResult<{ id: string; redirectTo: string }>> {
+    ): Promise<
+      ActionResult<{ id: string; title: string | null; redirectTo: string }>
+    > {
       await authorize();
+      const now = new Date();
       const deleted = await db
-        .delete(entries)
-        .where(eq(entries.id, id))
-        .returning({ id: entries.id });
-      if (deleted.length === 0) return { ok: false, error: '记录不存在' };
+        .update(entries)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(activeEntries(eq(entries.id, id)))
+        // The title rides along so the undo toast can name the entry.
+        .returning({ id: entries.id, title: entries.title });
+      const row = deleted[0];
+      if (!row) return { ok: false, error: messages.common.entryNotFound };
       revalidatePath(dashboardPath());
-      return { ok: true, data: { id, redirectTo: dashboardPath() } };
+      revalidatePath(trashPath());
+      return {
+        ok: true,
+        data: { id, title: row.title, redirectTo: dashboardPath() },
+      };
+    },
+
+    async restoreEntry(id: string): Promise<ActionResult<{ id: string }>> {
+      await authorize();
+      // Deliberately does not re-run the AI or touch tags_locked_at: a restore
+      // must return the entry exactly as it was.
+      const restored = await db
+        .update(entries)
+        .set({ deletedAt: null, updatedAt: new Date() })
+        .where(trashedEntries(eq(entries.id, id)))
+        .returning({ id: entries.id });
+      if (restored.length === 0)
+        return { ok: false, error: messages.common.entryNotFound };
+      revalidatePath(dashboardPath());
+      revalidatePath(entryDetailPath(id));
+      revalidatePath(trashPath());
+      return { ok: true, data: { id } };
+    },
+
+    /** Permanent. Guarded so only something already in the bin can be purged. */
+    async purgeEntry(id: string): Promise<ActionResult<{ id: string }>> {
+      await authorize();
+      const purged = await db
+        .delete(entries)
+        .where(trashedEntries(eq(entries.id, id)))
+        .returning({ id: entries.id });
+      if (purged.length === 0)
+        return { ok: false, error: messages.common.entryNotFound };
+      revalidatePath(trashPath());
+      return { ok: true, data: { id } };
     },
 
     async updateEntry(
@@ -123,9 +167,10 @@ export function createEntryActions({
           createdAt: input.createdAt,
           updatedAt: new Date(),
         })
-        .where(eq(entries.id, id))
+        .where(activeEntries(eq(entries.id, id)))
         .returning({ id: entries.id });
-      if (updated.length === 0) return { ok: false, error: '记录不存在' };
+      if (updated.length === 0)
+        return { ok: false, error: messages.common.entryNotFound };
 
       await scheduleAI(async () => {
         await processAIEntry(id, input.content).catch((err) => {
@@ -142,12 +187,9 @@ export function createEntryActions({
       id: string,
     ): Promise<ActionResult<{ id: string }>> {
       await authorize();
-      const entry = await db.query.entries.findFirst({
-        where: eq(entries.id, id),
-      });
-
+      const entry = await findActiveEntry(id, db);
       if (!entry) {
-        return { ok: false, error: '记录不存在' };
+        return { ok: false, error: messages.common.entryNotFound };
       }
 
       const content = entry.content;
@@ -158,7 +200,7 @@ export function createEntryActions({
           aiStatus: 'pending',
           updatedAt: new Date(),
         })
-        .where(eq(entries.id, id));
+        .where(activeEntries(eq(entries.id, id)));
 
       await scheduleAI(async () => {
         await processAIEntry(id, content).catch((err) => {
@@ -178,9 +220,10 @@ export function createEntryActions({
       const normalizedIds = normalizeEntryIds(ids);
       if (normalizedIds.length === 0) return { ok: true, data: { ids: [] } };
 
-      const foundEntries = await db.query.entries.findMany({
-        where: inArray(entries.id, normalizedIds),
-      });
+      const foundEntries = await db
+        .select({ id: entries.id, content: entries.content })
+        .from(entries)
+        .where(activeEntries(inArray(entries.id, normalizedIds)));
       const entryMap = new Map(foundEntries.map((entry) => [entry.id, entry]));
 
       await db
@@ -189,7 +232,7 @@ export function createEntryActions({
           aiStatus: 'pending',
           updatedAt: new Date(),
         })
-        .where(inArray(entries.id, normalizedIds));
+        .where(activeEntries(inArray(entries.id, normalizedIds)));
 
       await scheduleAI(async () => {
         const jobs = normalizedIds.flatMap((id) => {
@@ -217,11 +260,14 @@ export function createEntryActions({
       const normalizedIds = normalizeEntryIds(ids);
       if (normalizedIds.length === 0) return { ok: true, data: { ids: [] } };
 
+      const now = new Date();
       const deleted = await db
-        .delete(entries)
-        .where(inArray(entries.id, normalizedIds))
+        .update(entries)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(activeEntries(inArray(entries.id, normalizedIds)))
         .returning({ id: entries.id });
       revalidatePath(dashboardPath());
+      revalidatePath(trashPath());
       return { ok: true, data: { ids: deleted.map((entry) => entry.id) } };
     },
   };

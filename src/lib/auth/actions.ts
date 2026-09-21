@@ -13,6 +13,7 @@ import {
   sessionCookieOptions,
   sessionExpiry,
 } from './session';
+import { purgeExpiredEntries } from '@/lib/trash/purge';
 import {
   cleanupLoginAttempts,
   clearLoginFailures,
@@ -79,6 +80,11 @@ export async function login(
       loginKey(forwardedFor),
     );
     after(() => cleanupLoginAttempts());
+    // Guarantees the 30-day sweep eventually happens even if the owner never
+    // opens the recycle bin, without a cron dependency. Deliberately not on
+    // every timeline read: a day's delay is harmless, a DELETE per page load
+    // is not.
+    after(() => purgeExpiredEntries());
     return loginResult;
   });
   if (!result.ok) return result;

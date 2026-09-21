@@ -6,6 +6,7 @@ import { entries } from '@/lib/db/schema';
 import { normalizeAIStatus } from '@/lib/ai/polling';
 import { recoverStalePendingEntries } from '@/lib/ai/stale-pending';
 import { loadEntryTagsMap } from '@/lib/db/entry-tags';
+import { activeEntries } from '@/lib/db/entry-scope';
 
 export const maxDuration = 60;
 export const preferredRegion = 'sin1';
@@ -64,7 +65,7 @@ export function createBatchEntryStatusHandler({
         summary: entries.summary,
       })
       .from(entries)
-      .where(inArray(entries.id, ids));
+      .where(activeEntries(inArray(entries.id, ids)));
 
     const rowMap = new Map(rows.map((row) => [row.id, row]));
     const tagsById = await loadEntryTagsMap(database, ids);

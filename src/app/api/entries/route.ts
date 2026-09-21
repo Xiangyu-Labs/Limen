@@ -9,6 +9,7 @@ import { hasValidBearerToken } from '@/lib/auth/security';
 import { InputValidationError, parseEntryInput } from '@/lib/validation';
 import { parsePageLimit } from '@/lib/pagination';
 import { serializeApiEntry } from '@/lib/api/entry-serializer';
+import { activeEntries } from '@/lib/db/entry-scope';
 
 export const maxDuration = 60;
 export const preferredRegion = 'sin1';
@@ -91,7 +92,7 @@ export function createEntriesRouteHandlers({
           await database
             .update(entries)
             .set({ aiStatus, updatedAt: new Date() })
-            .where(eq(entries.id, id as string));
+            .where(activeEntries(eq(entries.id, id as string)));
         }
         return NextResponse.json(
           { id, status: 'created', aiStatus },

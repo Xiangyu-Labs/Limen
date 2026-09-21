@@ -10,6 +10,7 @@ import {
 } from '@/lib/db/entry-tags';
 import { messages } from '@/lib/messages';
 import { recoverStalePendingEntries } from '@/lib/ai/stale-pending';
+import { activeEntries } from '@/lib/db/entry-scope';
 
 export const DASHBOARD_PREVIEW_LENGTH = 280;
 
@@ -115,7 +116,7 @@ function buildEntryWhere({ q, tag, cursor: cursorValue }: EntryFilters) {
     if (cursorCondition) conditions.push(cursorCondition);
   }
 
-  return conditions.length > 0 ? and(...conditions) : undefined;
+  return activeEntries(...conditions);
 }
 
 export async function loadDashboardEntriesPage(

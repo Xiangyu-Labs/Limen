@@ -1,4 +1,4 @@
-import { and, asc, gte, lte, type SQL } from 'drizzle-orm';
+import { asc, gte, lte, type SQL } from 'drizzle-orm';
 import type { AppDatabase } from '@/lib/db';
 import { entries } from '@/lib/db/schema';
 import {
@@ -6,6 +6,7 @@ import {
   hasAnyTag,
   parseTagNames,
 } from '@/lib/db/entry-tags';
+import { activeEntries } from '@/lib/db/entry-scope';
 import type { ExportFilters } from '@/lib/export-core';
 
 export async function loadExportEntries(
@@ -38,7 +39,7 @@ export async function loadExportEntries(
       updatedAt: entries.updatedAt,
     })
     .from(entries)
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .where(activeEntries(...conditions))
     .orderBy(asc(entries.createdAt), asc(entries.recordedAt), asc(entries.id));
   return rows.map((row) => ({ ...row, tags: parseTagNames(row.tags) }));
 }

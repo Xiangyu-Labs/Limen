@@ -1,65 +1,93 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { NextResponse } from 'next/server';
+import { db, type AppDatabase } from '@/lib/db';
 import { entries } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { hasValidBearerToken } from '@/lib/auth/security';
+import { findActiveEntry } from '@/lib/db/entries-repo';
+import { activeEntries } from '@/lib/db/entry-scope';
+import { serializeApiEntry } from '@/lib/api/entry-serializer';
 
 export const maxDuration = 60;
 export const preferredRegion = 'sin1';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  if (!hasValidBearerToken(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const { id } = await params;
+type RouteDeps = {
+  db: AppDatabase;
+  authorizeRequest?: (request: Request) => boolean;
+  now?: () => Date;
+};
 
-  try {
-    const entry = await db.query.entries.findFirst({
-      where: eq(entries.id, id),
-    });
+type RouteContext = { params: Promise<{ id: string }> };
 
-    if (!entry) {
-      return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
-    }
+export function createEntryDetailRouteHandlers({
+  db: database,
+  authorizeRequest = hasValidBearerToken,
+  now = () => new Date(),
+}: RouteDeps) {
+  return {
+    async GET(request: Request, { params }: RouteContext) {
+      if (!authorizeRequest(request)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      const { id } = await params;
+      try {
+        const entry = await findActiveEntry(id, database);
+        if (!entry) {
+          return NextResponse.json(
+            { error: 'Entry not found' },
+            { status: 404 },
+          );
+        }
+        return NextResponse.json(serializeApiEntry(entry));
+      } catch (error) {
+        console.error(`Error fetching entry ${id}:`, error);
+        return NextResponse.json(
+          { error: 'Internal Server Error' },
+          { status: 500 },
+        );
+      }
+    },
 
-    return NextResponse.json(entry);
-  } catch (error) {
-    console.error(`Error fetching entry ${id}:`, error);
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 },
-    );
-  }
+    /**
+     * Soft delete. The documented client is the owner's own Shortcut, so a
+     * misfire has to be recoverable; a hard delete here would also give the
+     * app two deletion paths, one of which ignores the 30-day promise the
+     * recycle bin makes.
+     */
+    async DELETE(request: Request, { params }: RouteContext) {
+      if (!authorizeRequest(request)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      const { id } = await params;
+      try {
+        const deletedAt = now();
+        const result = await database
+          .update(entries)
+          .set({ deletedAt, updatedAt: deletedAt })
+          .where(activeEntries(eq(entries.id, id)))
+          .returning({ id: entries.id });
+
+        if (result.length === 0) {
+          return NextResponse.json(
+            { error: 'Entry not found' },
+            { status: 404 },
+          );
+        }
+        return NextResponse.json({
+          success: true,
+          deletedAt: deletedAt.toISOString(),
+        });
+      } catch (error) {
+        console.error(`Error deleting entry ${id}:`, error);
+        return NextResponse.json(
+          { error: 'Internal Server Error' },
+          { status: 500 },
+        );
+      }
+    },
+  };
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  if (!hasValidBearerToken(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const { id } = await params;
+const handlers = createEntryDetailRouteHandlers({ db });
 
-  try {
-    const result = await db
-      .delete(entries)
-      .where(eq(entries.id, id))
-      .returning();
-
-    if (result.length === 0) {
-      return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error(`Error deleting entry ${id}:`, error);
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 },
-    );
-  }
-}
+export const GET = handlers.GET;
+export const DELETE = handlers.DELETE;

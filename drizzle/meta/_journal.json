@@ -50,6 +50,13 @@
       "when": 1789982869803,
       "tag": "0006_sturdy_ender_wiggin",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789982975881,
+      "tag": "0007_unknown_viper",
+      "breakpoints": true
     }
   ]
 }

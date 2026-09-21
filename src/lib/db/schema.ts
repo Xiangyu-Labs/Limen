@@ -23,6 +23,9 @@ export const entries = pgTable(
     summary: text('summary'),
     source: text('source').default('web'),
     aiStatus: text('ai_status').default('pending'),
+    // Soft delete. Rows with a value live in the recycle bin for 30 days and
+    // must be excluded from every user-facing read; see lib/db/entry-scope.ts.
+    deletedAt: timestamp('deleted_at', { withTimezone: true, mode: 'date' }),
     // Set when the owner edits tags by hand; the AI then stops overwriting
     // them. A timestamp rather than a flag so "when" is recoverable.
     tagsLockedAt: timestamp('tags_locked_at', {
@@ -46,15 +49,18 @@ export const entries = pgTable(
       .$defaultFn(() => new Date()),
   },
   (table) => [
-    index('entries_timeline_idx').on(
-      table.createdAt.desc(),
-      table.recordedAt.desc(),
-      table.id.desc(),
-    ),
-    index('entries_ai_status_updated_at_idx').on(
-      table.aiStatus,
-      table.updatedAt,
-    ),
+    // Partial on purpose: Postgres only uses these when the query carries a
+    // matching `deleted_at IS NULL` predicate, so forgetting the filter costs
+    // the index outright rather than merely showing deleted rows.
+    index('entries_timeline_idx')
+      .on(table.createdAt.desc(), table.recordedAt.desc(), table.id.desc())
+      .where(sql`${table.deletedAt} is null`),
+    index('entries_ai_status_updated_at_idx')
+      .on(table.aiStatus, table.updatedAt)
+      .where(sql`${table.deletedAt} is null`),
+    index('entries_deleted_at_idx')
+      .on(table.deletedAt)
+      .where(sql`${table.deletedAt} is not null`),
   ],
 );
 

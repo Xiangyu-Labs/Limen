@@ -22,6 +22,10 @@ export function settingsPath() {
   return '/settings';
 }
 
+export function trashPath() {
+  return '/settings/trash';
+}
+
 export function stripLegacyLocalePath(pathname: string) {
   if (pathname === '/zh' || pathname === '/en') return '/';
   if (pathname.startsWith('/zh/')) return pathname.slice(3);

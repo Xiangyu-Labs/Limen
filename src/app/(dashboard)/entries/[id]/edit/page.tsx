@@ -1,6 +1,4 @@
-import { db } from '@/lib/db';
-import { entries } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { getEntryById } from '@/lib/entry-data';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -39,7 +37,7 @@ export default async function EditEntryPage({
   const { id } = await params;
 
   const [entry, settings] = await Promise.all([
-    db.query.entries.findFirst({ where: eq(entries.id, id) }),
+    getEntryById(id),
     settingsPromise,
   ]);
 
