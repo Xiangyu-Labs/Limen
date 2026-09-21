@@ -10,7 +10,6 @@ import {
   settingsPath,
 } from '@/lib/pathname';
 import { getSession } from '@/lib/auth/session';
-import { getSettings } from '@/lib/settings';
 import { redirect } from 'next/navigation';
 
 export const maxDuration = 60;
@@ -23,16 +22,12 @@ export default async function DashboardLayout({
   children: React.ReactNode;
   navControls: React.ReactNode;
 }) {
-  const [session, appSettings] = await Promise.all([
-    getSession(),
-    getSettings(),
-  ]);
+  const session = await getSession();
   if (!session) redirect(loginPath());
   return (
-    <div
-      data-theme={appSettings.theme}
-      className="flex min-h-screen flex-col bg-bg text-text"
-    >
+    // The theme lives on <html> (src/app/layout.tsx) so it also covers /login,
+    // the document background and toasts.
+    <div className="flex min-h-screen flex-col bg-bg text-text">
       <header className="sticky top-0 z-10 border-b border-border bg-surface/95 backdrop-blur">
         <div className="mx-auto max-w-5xl px-4 py-3 md:px-6">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 md:flex">

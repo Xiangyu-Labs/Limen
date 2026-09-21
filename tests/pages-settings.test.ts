@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-test('dashboard exposes an accessible settings icon and applies the theme', () => {
+test('dashboard exposes an accessible settings icon and leaves theming to the root layout', () => {
   const source = readFileSync(
     new URL('../src/app/(dashboard)/layout.tsx', import.meta.url),
     'utf8',
@@ -10,7 +10,9 @@ test('dashboard exposes an accessible settings icon and applies the theme', () =
   assert.match(source, /settingsPath\(\)/);
   assert.match(source, /aria-label="设置"/);
   assert.match(source, /title="设置"/);
-  assert.match(source, /data-theme=\{appSettings\.theme\}/);
+  // The theme moved to <html> so it also covers /login, the document
+  // background and toasts. See tests/theme-shell.test.mjs.
+  assert.doesNotMatch(source, /data-theme=/);
 });
 
 test('settings form provides all settings, GET filters, and font sizes', () => {

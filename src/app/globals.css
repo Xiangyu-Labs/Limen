@@ -1,6 +1,9 @@
 @import 'tailwindcss';
+@plugin '@tailwindcss/typography';
 
-@custom-variant dark (&:where(.dark, .dark *));
+/* The app themes via [data-theme] on <html>, never a `.dark` class. Pointing
+   the variant at the class would make every `dark:` utility silently dead. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
 @theme {
   --color-primary: var(--primary);
@@ -91,9 +94,37 @@
   }
 }
 
+/* Unlayered on purpose: `@import 'tailwindcss'` puts the typography plugin's
+   own --tw-prose-* defaults inside a cascade layer, and unlayered rules beat
+   layered ones. Mapping them to the app tokens makes prose follow the theme. */
+.prose {
+  --tw-prose-body: var(--text);
+  --tw-prose-headings: var(--text);
+  --tw-prose-lead: var(--muted);
+  --tw-prose-links: var(--primary);
+  --tw-prose-bold: var(--text);
+  --tw-prose-counters: var(--muted);
+  --tw-prose-bullets: var(--border);
+  --tw-prose-hr: var(--border);
+  --tw-prose-quotes: var(--text);
+  --tw-prose-quote-borders: var(--border);
+  --tw-prose-captions: var(--muted);
+  --tw-prose-code: var(--primary);
+  --tw-prose-pre-code: var(--text);
+  --tw-prose-pre-bg: var(--surface2);
+  --tw-prose-th-borders: var(--border);
+  --tw-prose-td-borders: var(--border);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+
+  /* The themed background belongs on <html> too: <body> alone leaves a light
+     strip behind iOS rubber-band overscroll when the theme is dark. */
+  html {
+    background-color: var(--bg);
   }
 
   body {

@@ -1,26 +1,34 @@
 import './globals.css';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { AppToaster } from '@/components/AppToaster';
+import { getSettings } from '@/lib/settings';
+import { themeBackgroundColor } from '@/lib/theme';
 
 // A per-request CSP nonce requires Next.js to render scripts dynamically.
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Limen',
+  title: { default: 'Limen', template: '%s · Limen' },
   description: 'A personal diary app',
   robots: { index: false, follow: false, noarchive: true, nocache: true },
 };
 
-export default function RootLayout({
+export async function generateViewport(): Promise<Viewport> {
+  const { theme } = await getSettings();
+  return { themeColor: themeBackgroundColor(theme) };
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { theme } = await getSettings();
   return (
-    <html lang="zh">
+    <html lang="zh-CN" data-theme={theme}>
       <body className="antialiased">
         {children}
-        <AppToaster />
+        <AppToaster theme={theme} />
       </body>
     </html>
   );
