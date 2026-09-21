@@ -17,16 +17,6 @@ export function getDefaultCreatedAtValue(
   return formatDateInTimeZone(now, timeZone);
 }
 
-export function isEntrySubmitDisabled({
-  loading,
-  content,
-}: {
-  loading: boolean;
-  content: string;
-}) {
-  return loading || !content.trim();
-}
-
 export default async function NewEntryPage() {
   const settings = await getSettings();
   return (

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { messages } from '@/lib/messages';
 
 test('dashboard exposes an accessible settings icon and leaves theming to the root layout', () => {
   const source = readFileSync(
@@ -39,7 +40,9 @@ test('settings form provides all settings, GET filters, and font sizes', () => {
   assert.match(editor, /editorFontSize === 'small'[\s\S]*'text-base'/);
   assert.match(editor, /editorFontSize === 'medium'[\s\S]*'text-lg'/);
   assert.match(editor, /editorFontSize === 'large'[\s\S]*'text-xl'/);
-  assert.match(editor, /丢弃草稿/);
+  // The literal moved into messages.ts, where all user-facing copy belongs.
+  assert.match(editor, /messages\.editor\.draft\.discard/);
+  assert.equal(messages.editor.draft.discard, '丢弃草稿');
   assert.doesNotMatch(editor, /router\.push\([\s\S]{0,100}router\.refresh/);
 });
 

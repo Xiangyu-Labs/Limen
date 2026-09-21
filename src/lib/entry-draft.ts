@@ -9,6 +9,63 @@ export type EntryDraft = {
   savedAt: string;
 };
 
+/**
+ * The editor's draft state. Modelled explicitly because the UI used to decide
+ * whether to show the message in red by searching the Chinese copy for '失败'
+ * and '无法' — rewording a string silently downgraded an error to a hint.
+ */
+export type DraftStatus =
+  | { kind: 'idle' }
+  | { kind: 'saving' }
+  | { kind: 'saved'; savedAt: Date }
+  | { kind: 'cleared' }
+  | { kind: 'restored' }
+  | { kind: 'discarded' }
+  | { kind: 'error'; reason: 'save' | 'discard' | 'read' };
+
+export function describeDraftStatus(
+  status: DraftStatus,
+  copy: { draft: DraftCopy },
+  formatTime: (date: Date) => string,
+): { text: string | undefined; tone: 'muted' | 'danger' } {
+  const draft = copy.draft;
+  switch (status.kind) {
+    case 'idle':
+      return { text: undefined, tone: 'muted' };
+    case 'saving':
+      return { text: draft.saving, tone: 'muted' };
+    case 'saved':
+      return { text: draft.saved(formatTime(status.savedAt)), tone: 'muted' };
+    case 'cleared':
+      return { text: draft.cleared, tone: 'muted' };
+    case 'restored':
+      return { text: draft.restored, tone: 'muted' };
+    case 'discarded':
+      return { text: draft.discarded, tone: 'muted' };
+    case 'error':
+      return {
+        text:
+          status.reason === 'save'
+            ? draft.saveFailed
+            : status.reason === 'discard'
+              ? draft.discardFailed
+              : draft.unreadable,
+        tone: 'danger',
+      };
+  }
+}
+
+type DraftCopy = {
+  saving: string;
+  saved: (time: string) => string;
+  cleared: string;
+  restored: string;
+  discarded: string;
+  saveFailed: string;
+  discardFailed: string;
+  unreadable: string;
+};
+
 export function hasEntryDraftChanges(
   content: string,
   createdAt: string,

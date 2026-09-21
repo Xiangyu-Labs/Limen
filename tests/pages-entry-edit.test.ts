@@ -24,10 +24,12 @@ test('edit entry form model maps entry fields to editable values', async () => {
 test('entry editor shell model exposes edit-mode copy', async () => {
   const { buildEntryEditorShellModel } =
     await import('@/components/EntryEditorShell');
-  const model = buildEntryEditorShellModel({ mode: 'edit', contentLength: 12 });
+  const model = buildEntryEditorShellModel({ mode: 'edit' });
 
   assert.equal(model.title, '编辑');
   assert.equal(model.primaryActionLabel, '保存');
-  assert.equal(model.metaLabel, '12 字');
+  // The character counter moved to describeContentLength, which also drives
+  // its tone near the limit. See tests/entry-editor.test.ts.
+  assert.equal('metaLabel' in model, false);
   assert.equal('helperText' in model, false);
 });

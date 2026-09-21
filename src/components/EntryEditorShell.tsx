@@ -1,12 +1,11 @@
 import { Card } from '@/components/ui/card';
 import { messages } from '@/lib/messages';
+import { cn } from '@/lib/utils';
 
 export function buildEntryEditorShellModel({
   mode,
-  contentLength,
 }: {
   mode: 'create' | 'edit';
-  contentLength: number;
 }) {
   return {
     title:
@@ -15,17 +14,18 @@ export function buildEntryEditorShellModel({
         : messages.editor.editEntry,
     primaryActionLabel:
       mode === 'create' ? messages.editor.capture : messages.editor.save,
-    metaLabel: messages.editor.characters(contentLength),
   };
 }
 
 export function EntryEditorShell({
   title,
   metaLabel,
+  metaTone = 'muted',
   children,
 }: {
   title: string;
   metaLabel: string;
+  metaTone?: 'muted' | 'warning' | 'danger';
   children: React.ReactNode;
 }) {
   return (
@@ -35,7 +35,16 @@ export function EntryEditorShell({
           <h2 className="truncate text-base font-semibold tracking-tight text-text">
             {title}
           </h2>
-          <div className="shrink-0 text-sm text-muted">{metaLabel}</div>
+          <div
+            className={cn(
+              'shrink-0 text-sm',
+              metaTone === 'danger' && 'font-medium text-danger',
+              metaTone === 'warning' && 'text-warning',
+              metaTone === 'muted' && 'text-muted',
+            )}
+          >
+            {metaLabel}
+          </div>
         </div>
       </div>
       {children}

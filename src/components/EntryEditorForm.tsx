@@ -11,30 +11,35 @@ import {
   useTransition,
 } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, Save, Trash2 } from 'lucide-react';
+import { Eye, Loader2, Pencil, Save, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createEntry, updateEntry } from '@/lib/actions/entries';
-import { ENTRY_CONTENT_MAX_LENGTH } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { MarkdownContent } from '@/components/MarkdownContent';
 import {
   EntryEditorShell,
   buildEntryEditorShellModel,
 } from '@/components/EntryEditorShell';
 import { messages } from '@/lib/messages';
 import {
+  type DraftStatus,
+  describeDraftStatus,
   entryDraftKey,
   hasEntryDraftChanges,
   parseEntryDraft,
   serializeEntryDraft,
 } from '@/lib/entry-draft';
+import { describeContentLength, isEntrySubmittable } from '@/lib/entry-editor';
+import { isSaveShortcut } from '@/lib/keyboard';
 import type { EditorFontSize } from '@/lib/settings-core';
 import { cn } from '@/lib/utils';
 import { formatTimestampInTimeZone } from '@/lib/format';
 
 const DRAFT_SAVE_DELAY_MS = 500;
 const DRAFT_STORAGE_ERROR = '__limen_draft_storage_error__';
+
 export function EntryEditorForm({
   mode,
   entryId,
@@ -54,9 +59,11 @@ export function EntryEditorForm({
   const [contentOverride, setContentOverride] = useState<string>();
   const [createdAtOverride, setCreatedAtOverride] = useState<string>();
   const [error, setError] = useState<string>();
-  const [draftStatus, setDraftStatus] = useState<string>();
+  const [draftStatus, setDraftStatus] = useState<DraftStatus>();
   const [draftDismissed, setDraftDismissed] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
   const draftKey = entryDraftKey(mode, entryId);
   const subscribeToDraft = useCallback(
     (onStoreChange: () => void) => {
@@ -107,17 +114,25 @@ export function EntryEditorForm({
     createdAt: initialCreatedAt,
   });
   const draftChangedRef = useRef(false);
-  const visibleDraftStatus =
+  const effectiveDraftStatus: DraftStatus =
     draftStatus ??
     (rawDraft === DRAFT_STORAGE_ERROR
-      ? '无法读取本地草稿'
+      ? { kind: 'error', reason: 'read' }
       : shouldRestoreDraft
-        ? '已恢复本地草稿'
-        : undefined);
-  const shell = buildEntryEditorShellModel({
-    mode,
-    contentLength: content.length,
+        ? { kind: 'restored' }
+        : { kind: 'idle' });
+  const visibleDraftStatus = describeDraftStatus(
+    effectiveDraftStatus,
+    messages.editor,
+    (date) => formatTimestampInTimeZone(date, timeZone),
+  );
+  const contentLength = describeContentLength(content.length, messages.editor);
+  const canSubmit = isEntrySubmittable({
+    content,
+    overLimit: contentLength.overLimit,
+    pending: isPending,
   });
+  const shell = buildEntryEditorShellModel({ mode });
 
   const persistDraft = useCallback(() => {
     if (!draftChangedRef.current) return;
@@ -133,7 +148,7 @@ export function EntryEditorForm({
       ) {
         localStorage.removeItem(draftKey);
         draftChangedRef.current = false;
-        setDraftStatus('草稿已清除');
+        setDraftStatus({ kind: 'cleared' });
         return;
       }
       const savedAt = new Date();
@@ -141,13 +156,11 @@ export function EntryEditorForm({
         draftKey,
         serializeEntryDraft(latest.content, latest.createdAt, savedAt),
       );
-      setDraftStatus(
-        `草稿已保存 ${formatTimestampInTimeZone(savedAt, timeZone)}`,
-      );
+      setDraftStatus({ kind: 'saved', savedAt });
     } catch {
-      setDraftStatus('草稿保存失败，请勿关闭页面');
+      setDraftStatus({ kind: 'error', reason: 'save' });
     }
-  }, [draftKey, initialContent, initialCreatedAt, timeZone]);
+  }, [draftKey, initialContent, initialCreatedAt]);
 
   function discardDraft() {
     try {
@@ -160,9 +173,9 @@ export function EntryEditorForm({
         createdAt: initialCreatedAt,
       };
       draftChangedRef.current = false;
-      setDraftStatus('草稿已丢弃');
+      setDraftStatus({ kind: 'discarded' });
     } catch {
-      setDraftStatus('草稿丢弃失败，请重试');
+      setDraftStatus({ kind: 'error', reason: 'discard' });
     }
   }
 
@@ -220,12 +233,22 @@ export function EntryEditorForm({
   }
 
   return (
-    <EntryEditorShell title={shell.title} metaLabel={shell.metaLabel}>
+    <EntryEditorShell
+      title={shell.title}
+      metaLabel={contentLength.text}
+      metaTone={contentLength.tone}
+    >
       <form
+        ref={formRef}
         onSubmit={submit}
+        onKeyDown={(event) => {
+          if (!isSaveShortcut(event) || !canSubmit) return;
+          event.preventDefault();
+          formRef.current?.requestSubmit();
+        }}
         className="flex min-h-[640px] flex-col md:min-h-[72vh]"
       >
-        <div className="border-b border-border bg-surface px-4 py-3 md:px-5">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border bg-surface px-4 py-3 md:px-5">
           <label htmlFor="entry-created-at" className="sr-only">
             {messages.editor.time}
           </label>
@@ -236,7 +259,7 @@ export function EntryEditorForm({
             value={createdAt}
             onChange={(event) => {
               draftChangedRef.current = true;
-              setDraftStatus('正在保存草稿');
+              setDraftStatus({ kind: 'saving' });
               latestDraftRef.current = {
                 content,
                 createdAt: event.target.value,
@@ -247,20 +270,49 @@ export function EntryEditorForm({
             disabled={isPending}
             required
           />
+          <div
+            role="group"
+            aria-label={messages.editor.preview}
+            className="ml-auto inline-flex rounded-md border border-border p-1"
+          >
+            {(
+              [
+                [false, messages.editor.write, Pencil],
+                [true, messages.editor.preview, Eye],
+              ] as const
+            ).map(([value, label, Icon]) => (
+              <button
+                key={label}
+                type="button"
+                aria-pressed={showPreview === value}
+                onClick={() => setShowPreview(value)}
+                className={cn(
+                  'inline-flex h-8 items-center gap-1.5 rounded-sm px-3 text-sm transition-colors',
+                  showPreview === value
+                    ? 'bg-surface2 font-medium text-text'
+                    : 'text-muted hover:text-text',
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <label htmlFor="entry-content" className="sr-only">
           {messages.editor.content}
         </label>
+        {/* The textarea stays mounted while previewing so its value is still
+            submitted and the browser keeps undo history and cursor position. */}
         <Textarea
           id="entry-content"
           name="content"
           required
-          maxLength={ENTRY_CONTENT_MAX_LENGTH}
           value={content}
           onChange={(event) => {
             draftChangedRef.current = true;
-            setDraftStatus('正在保存草稿');
+            setDraftStatus({ kind: 'saving' });
             latestDraftRef.current = {
               content: event.target.value,
               createdAt,
@@ -272,6 +324,7 @@ export function EntryEditorForm({
           }
           className={cn(
             'flex-1 resize-none border-0 bg-transparent p-4 leading-8 focus-visible:ring-0 md:p-6',
+            showPreview && 'hidden',
             editorFontSize === 'small' && 'text-base',
             editorFontSize === 'medium' && 'text-lg',
             editorFontSize === 'large' && 'text-xl',
@@ -279,6 +332,17 @@ export function EntryEditorForm({
           autoFocus={mode === 'create'}
           disabled={isPending}
         />
+        {showPreview ? (
+          <div className="flex-1 overflow-y-auto p-4 md:p-6">
+            {content.trim() ? (
+              <MarkdownContent>{content}</MarkdownContent>
+            ) : (
+              <p className="text-sm text-muted">
+                {messages.editor.previewEmpty}
+              </p>
+            )}
+          </div>
+        ) : null}
 
         <div className="flex flex-col gap-2 border-t border-border bg-surface px-4 py-3 md:px-5">
           {error ? (
@@ -290,14 +354,14 @@ export function EntryEditorForm({
             <div className="flex min-w-0 items-center gap-2">
               <p
                 aria-live="polite"
-                className={
-                  visibleDraftStatus?.includes('失败') ||
-                  visibleDraftStatus?.includes('无法')
-                    ? 'text-sm text-danger'
-                    : 'text-sm text-muted'
-                }
+                className={cn(
+                  'text-sm',
+                  visibleDraftStatus.tone === 'danger'
+                    ? 'text-danger'
+                    : 'text-muted',
+                )}
               >
-                {visibleDraftStatus}
+                {visibleDraftStatus.text}
               </p>
               {shouldRestoreDraft ? (
                 <Button
@@ -309,22 +373,31 @@ export function EntryEditorForm({
                   className="shrink-0 text-muted"
                 >
                   <Trash2 className="h-4 w-4" />
-                  丢弃草稿
+                  {messages.editor.draft.discard}
                 </Button>
               ) : null}
             </div>
-            <Button
-              type="submit"
-              disabled={isPending || !content.trim()}
-              className="h-10 min-w-24 px-4"
-            >
-              {isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              <span>{isPending ? '保存中' : shell.primaryActionLabel}</span>
-            </Button>
+            <div className="flex shrink-0 items-center gap-3">
+              <span className="hidden text-xs text-muted md:inline">
+                {messages.editor.saveShortcutHint}
+              </span>
+              <Button
+                type="submit"
+                disabled={!canSubmit}
+                className="h-10 min-w-24 px-4"
+              >
+                {isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4" />
+                )}
+                <span>
+                  {isPending
+                    ? messages.editor.saving
+                    : shell.primaryActionLabel}
+                </span>
+              </Button>
+            </div>
           </div>
         </div>
       </form>
