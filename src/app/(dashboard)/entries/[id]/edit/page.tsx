@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { entries } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -10,6 +11,8 @@ import { messages } from '@/lib/messages';
 import { entryDetailPath } from '@/lib/pathname';
 import { formatEntryDateForInput } from '@/lib/entry-date';
 import { getSettings } from '@/lib/settings';
+
+export const metadata: Metadata = { title: '编辑' };
 
 export function formatEntryDateForEditInput(date: Date | null) {
   return formatEntryDateForInput(date);

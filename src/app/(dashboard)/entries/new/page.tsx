@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,8 @@ import { messages } from '@/lib/messages';
 import { dashboardPath } from '@/lib/pathname';
 import { formatDateInTimeZone } from '@/lib/entry-date';
 import { getSettings } from '@/lib/settings';
+
+export const metadata: Metadata = { title: '新建' };
 
 export function getDefaultCreatedAtValue(
   now = new Date(),

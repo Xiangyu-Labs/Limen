@@ -17,13 +17,23 @@ type ProxyDecision =
   | { type: 'redirect'; location: string }
   | { type: 'next' };
 
+// Served from the app root by Next's metadata files. The manifest and icons are
+// fetched without credentials during a PWA install, so redirecting them to
+// /login would break "add to home screen" outright.
+const PUBLIC_ASSET_PATHS = new Set([
+  '/favicon.ico',
+  '/robots.txt',
+  '/manifest.webmanifest',
+  '/icon.svg',
+  '/apple-icon.png',
+]);
+
 export function shouldBypassProxy(pathname: string) {
   return (
     pathname.startsWith('/_next/static/') ||
     pathname.startsWith('/_next/image/') ||
     pathname.startsWith('/api/') ||
-    pathname === '/favicon.ico' ||
-    pathname === '/robots.txt'
+    PUBLIC_ASSET_PATHS.has(pathname)
   );
 }
 

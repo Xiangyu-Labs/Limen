@@ -1,0 +1,12 @@
+import type { Metadata } from 'next';
+
+// The login page is a client component and cannot export metadata itself.
+export const metadata: Metadata = { title: '登录' };
+
+export default function LoginLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return children;
+}

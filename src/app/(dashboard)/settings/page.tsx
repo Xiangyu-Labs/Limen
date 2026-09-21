@@ -1,8 +1,11 @@
+import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { entries } from '@/lib/db/schema';
 import { parseStoredTags } from '@/lib/tags';
 import { getSettings } from '@/lib/settings';
 import { SettingsForm } from '@/components/SettingsForm';
+
+export const metadata: Metadata = { title: '设置' };
 
 const EXPORT_MESSAGES = {
   invalid: '导出条件无效，请检查日期和格式。',

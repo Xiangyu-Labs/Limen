@@ -36,6 +36,10 @@ export const messages = {
     aiSummary: '摘要',
     regenerateMetadata: '重新整理',
   },
+  notFound: {
+    message: '找不到这个页面',
+    backToTimeline: '回到时间线',
+  },
   login: {
     submitIdle: '进入',
     submitLoading: '进入中...',

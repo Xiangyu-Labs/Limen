@@ -18,8 +18,6 @@ jobs:
       - run: npm run check
       - run: npm run build
         env:
-          SESSION_SECRET: ci-session-secret-with-at-least-32-characters
-          AUTH_PASSWORD_HASH: ci-placeholder-not-used-during-build
-          API_TOKEN_HASH: ci-placeholder-not-used-during-build
+          AUTH_PASSWORD: ci-placeholder-not-used-during-build
           DATABASE_URL: postgresql://test:test@localhost:5432/limen_ci
       - run: npm audit --audit-level=moderate

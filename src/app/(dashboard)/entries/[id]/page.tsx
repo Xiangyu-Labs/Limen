@@ -1,6 +1,5 @@
-import { db } from '@/lib/db';
-import { entries } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import type { Metadata } from 'next';
+import { getEntryById } from '@/lib/entry-data';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { MarkdownContent } from '@/components/MarkdownContent';
@@ -41,6 +40,18 @@ export function buildEntryDetailViewModel(
   };
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const entry = await getEntryById(id);
+  return {
+    title: entry?.title || messages.editor.untitledCapture,
+  };
+}
+
 export default async function EntryDetailPage({
   params,
 }: {
@@ -49,9 +60,7 @@ export default async function EntryDetailPage({
   const { id } = await params;
 
   await recoverStalePendingEntries();
-  const entry = await db.query.entries.findFirst({
-    where: eq(entries.id, id),
-  });
+  const entry = await getEntryById(id);
 
   if (!entry) {
     notFound();
