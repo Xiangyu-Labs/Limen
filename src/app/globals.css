@@ -23,8 +23,13 @@
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
 
-  --font-sans: system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+  --font-sans:
+    system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+  /* No webfont is loaded: the mono face is whatever the OS already ships. */
+  --font-mono:
+    ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code', Menlo, Consolas,
+    monospace;
 
   --shadow-sm: none;
   --shadow-md: none;
@@ -34,21 +39,23 @@
 
 :root {
   color-scheme: light;
-  --primary: #2f6f55;
+  /* Black and white does the work; blue is the only accent, kept for links,
+     focus and "something is happening". Buttons are ink, not accent. */
+  --primary: #2563eb;
 
-  --bg: #f7f7f4;
+  --bg: #ffffff;
   --surface: #ffffff;
-  --surface2: #eeeeea;
+  --surface2: #f4f4f5;
 
-  --text: #20231f;
-  --muted: #686d66;
+  --text: #09090b;
+  --muted: #71717a;
 
-  --border: #deded8;
-  --ring: #2f6f55;
+  --border: #e4e4e7;
+  --ring: #2563eb;
 
-  --danger: #b42318;
-  --warning: #a15c07;
-  --info: #315f8c;
+  --danger: #dc2626;
+  --warning: #b45309;
+  --info: #2563eb;
 
   --radius: 6px;
   --radius-sm: calc(var(--radius) - 4px);
@@ -57,40 +64,40 @@
   --radius-xl: calc(var(--radius) + 4px);
 
   /* Alpha Variants */
-  --primary-a10: color-mix(in srgb, var(--primary), transparent 90%);
+  --primary-a10: color-mix(in srgb, var(--primary), transparent 85%);
   --danger-a10: color-mix(in srgb, var(--danger), transparent 90%);
   --warning-a10: color-mix(in srgb, var(--warning), transparent 90%);
 }
 
 [data-theme='dark'] {
   color-scheme: dark;
-  --primary: #58a77e;
-  --bg: #161816;
-  --surface: #1d201d;
-  --surface2: #292d29;
-  --text: #e8ebe7;
-  --muted: #a6ada5;
-  --border: #383d38;
-  --ring: #69b58c;
-  --danger: #ef7c72;
-  --warning: #e5a452;
-  --info: #80acd5;
+  --primary: #60a5fa;
+  --bg: #0a0a0a;
+  --surface: #0a0a0a;
+  --surface2: #1c1c1f;
+  --text: #fafafa;
+  --muted: #a1a1aa;
+  --border: #27272a;
+  --ring: #60a5fa;
+  --danger: #f87171;
+  --warning: #fbbf24;
+  --info: #60a5fa;
 }
 
 @media (prefers-color-scheme: dark) {
   [data-theme='system'] {
     color-scheme: dark;
-    --primary: #58a77e;
-    --bg: #161816;
-    --surface: #1d201d;
-    --surface2: #292d29;
-    --text: #e8ebe7;
-    --muted: #a6ada5;
-    --border: #383d38;
-    --ring: #69b58c;
-    --danger: #ef7c72;
-    --warning: #e5a452;
-    --info: #80acd5;
+    --primary: #60a5fa;
+    --bg: #0a0a0a;
+    --surface: #0a0a0a;
+    --surface2: #1c1c1f;
+    --text: #fafafa;
+    --muted: #a1a1aa;
+    --border: #27272a;
+    --ring: #60a5fa;
+    --danger: #f87171;
+    --warning: #fbbf24;
+    --info: #60a5fa;
   }
 }
 
@@ -109,11 +116,23 @@
   --tw-prose-quotes: var(--text);
   --tw-prose-quote-borders: var(--border);
   --tw-prose-captions: var(--muted);
-  --tw-prose-code: var(--primary);
+  --tw-prose-code: var(--text);
   --tw-prose-pre-code: var(--text);
   --tw-prose-pre-bg: var(--surface2);
   --tw-prose-th-borders: var(--border);
   --tw-prose-td-borders: var(--border);
+}
+
+.prose :where(code):not(:where(pre *)) {
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+  padding: 0.1em 0.35em;
+  font-weight: 400;
+}
+
+.prose :where(code):not(:where(pre *))::before,
+.prose :where(code):not(:where(pre *))::after {
+  content: none;
 }
 
 @layer base {

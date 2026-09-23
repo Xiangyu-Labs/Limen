@@ -30,14 +30,12 @@ export default async function SettingsPage({
     EXPORT_MESSAGES[query.export as keyof typeof EXPORT_MESSAGES];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold">设置</h1>
-      </div>
+    <div className="mx-auto max-w-2xl space-y-10">
+      <h1 className="text-2xl font-semibold tracking-tight">设置</h1>
       {exportMessage ? (
         <p
           role="alert"
-          className="border-l-2 border-warning bg-warning/10 px-4 py-3 text-sm"
+          className="rounded-md border border-warning/30 px-4 py-3 text-sm text-warning"
         >
           {exportMessage}
         </p>

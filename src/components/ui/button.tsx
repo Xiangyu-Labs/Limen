@@ -4,13 +4,13 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  'inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[background-color,border-color,color,opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:cursor-default disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:scale-[0.99]',
+  'inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-[background-color,border-color,color,opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:pointer-events-none disabled:cursor-default disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 active:scale-[0.99]',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-white hover:opacity-90',
+        default: 'bg-text text-bg hover:opacity-85',
         secondary:
-          'border border-border bg-surface text-text hover:bg-surface2',
+          'border border-border bg-surface text-text hover:border-text/30 hover:bg-surface2',
         destructive: 'bg-danger text-white hover:opacity-90',
         outline:
           'border border-border bg-transparent hover:bg-surface2 text-text',

@@ -86,14 +86,14 @@ export function EntryDetailActions({
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="-mr-3 flex items-center gap-1">
       <Button
-        variant="secondary"
+        variant="ghost"
         size="icon"
         type="button"
         disabled={isRegenerating || optimisticPending}
         onClick={regenerate}
-        className="h-10 w-10 text-muted hover:text-primary"
+        className="text-muted hover:text-text"
         aria-label={messages.entryDetail.regenerateMetadata}
         title={messages.entryDetail.regenerateMetadata}
       >
@@ -108,7 +108,7 @@ export function EntryDetailActions({
         variant="ghost"
         size="icon"
         asChild
-        className="h-10 w-10 text-muted hover:text-primary"
+        className="text-muted hover:text-text"
       >
         <Link
           href={entryEditPath(entryId)}
@@ -131,7 +131,7 @@ export function EntryDetailActions({
             size="icon"
             type="button"
             disabled={isDeleting}
-            className="h-10 w-10 text-muted hover:bg-danger/10 hover:text-danger"
+            className="text-muted hover:bg-danger/10 hover:text-danger"
             aria-label={messages.common.delete}
             title={messages.common.delete}
           >
@@ -143,17 +143,17 @@ export function EntryDetailActions({
           </Button>
         </AlertDialog.Trigger>
         <AlertDialog.Portal>
-          <AlertDialog.Overlay className="fixed inset-0 z-40 bg-black/40" />
-          <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(92vw,26rem)] -translate-x-1/2 -translate-y-1/2 rounded-md border border-border bg-surface p-5 shadow-xl">
+          <AlertDialog.Overlay className="fixed inset-0 z-40 bg-bg/70 backdrop-blur-sm" />
+          <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(92vw,26rem)] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-surface p-6">
             <AlertDialog.Title className="text-base font-semibold text-text">
               {messages.trash.deleteConfirmTitle}
             </AlertDialog.Title>
             <AlertDialog.Description className="mt-2 text-sm leading-6 text-muted">
               {messages.trash.deleteConfirmBody}
             </AlertDialog.Description>
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="mt-6 flex justify-end gap-2">
               <AlertDialog.Cancel asChild disabled={isDeleting}>
-                <Button variant="ghost" disabled={isDeleting}>
+                <Button variant="secondary" disabled={isDeleting}>
                   取消
                 </Button>
               </AlertDialog.Cancel>
@@ -165,7 +165,7 @@ export function EntryDetailActions({
                   type="button"
                   disabled={isDeleting}
                   onClick={remove}
-                  className="bg-danger text-white hover:bg-danger/90"
+                  variant="destructive"
                 >
                   {isDeleting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

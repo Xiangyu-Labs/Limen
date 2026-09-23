@@ -248,7 +248,7 @@ export function EntryEditorForm({
         }}
         className="flex min-h-[640px] flex-col md:min-h-[72vh]"
       >
-        <div className="flex flex-wrap items-center gap-2 border-b border-border bg-surface px-4 py-3 md:px-5">
+        <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2.5 md:px-6">
           <label htmlFor="entry-created-at" className="sr-only">
             {messages.editor.time}
           </label>
@@ -266,14 +266,14 @@ export function EntryEditorForm({
               };
               setCreatedAtOverride(event.target.value);
             }}
-            className="max-w-56"
+            className="h-8 w-auto max-w-56 border-transparent bg-surface2 px-2.5 font-mono text-xs"
             disabled={isPending}
             required
           />
           <div
             role="group"
             aria-label={messages.editor.preview}
-            className="ml-auto inline-flex rounded-md border border-border p-1"
+            className="ml-auto inline-flex rounded-md bg-surface2 p-0.5"
           >
             {(
               [
@@ -287,9 +287,9 @@ export function EntryEditorForm({
                 aria-pressed={showPreview === value}
                 onClick={() => setShowPreview(value)}
                 className={cn(
-                  'inline-flex h-8 items-center gap-1.5 rounded-sm px-3 text-sm transition-colors',
+                  'inline-flex h-7 items-center gap-1.5 rounded-sm px-2.5 text-xs transition-colors [&_svg]:size-3.5',
                   showPreview === value
-                    ? 'bg-surface2 font-medium text-text'
+                    ? 'bg-bg font-medium text-text ring-1 ring-border'
                     : 'text-muted hover:text-text',
                 )}
               >
@@ -323,7 +323,7 @@ export function EntryEditorForm({
             mode === 'create' ? messages.editor.contentPlaceholder : undefined
           }
           className={cn(
-            'flex-1 resize-none border-0 bg-transparent p-4 leading-8 focus-visible:ring-0 md:p-6',
+            'flex-1 resize-none rounded-none border-0 bg-transparent p-4 leading-8 hover:border-0 focus-visible:ring-0 md:px-6 md:py-5',
             showPreview && 'hidden',
             editorFontSize === 'small' && 'text-base',
             editorFontSize === 'medium' && 'text-lg',
@@ -333,7 +333,7 @@ export function EntryEditorForm({
           disabled={isPending}
         />
         {showPreview ? (
-          <div className="flex-1 overflow-y-auto p-4 md:p-6">
+          <div className="flex-1 overflow-y-auto p-4 md:px-6 md:py-5">
             {content.trim() ? (
               <MarkdownContent>{content}</MarkdownContent>
             ) : (
@@ -344,7 +344,7 @@ export function EntryEditorForm({
           </div>
         ) : null}
 
-        <div className="flex flex-col gap-2 border-t border-border bg-surface px-4 py-3 md:px-5">
+        <div className="flex flex-col gap-2 border-t border-border px-4 py-3 md:px-6">
           {error ? (
             <p role="alert" className="text-sm text-danger">
               {error}
@@ -355,7 +355,7 @@ export function EntryEditorForm({
               <p
                 aria-live="polite"
                 className={cn(
-                  'text-sm',
+                  'font-mono text-xs',
                   visibleDraftStatus.tone === 'danger'
                     ? 'text-danger'
                     : 'text-muted',
@@ -378,13 +378,13 @@ export function EntryEditorForm({
               ) : null}
             </div>
             <div className="flex shrink-0 items-center gap-3">
-              <span className="hidden text-xs text-muted md:inline">
+              <span className="hidden font-mono text-xs text-muted md:inline">
                 {messages.editor.saveShortcutHint}
               </span>
               <Button
                 type="submit"
                 disabled={!canSubmit}
-                className="h-10 min-w-24 px-4"
+                className="h-9 min-w-20 px-4"
               >
                 {isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

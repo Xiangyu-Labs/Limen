@@ -64,7 +64,7 @@ export function EntryTitleEditor({
             setDraft(title);
             setEditing(true);
           }}
-          className="mt-1 shrink-0 text-muted opacity-0 transition-opacity focus-visible:opacity-100 group-hover/title:opacity-100"
+          className="mt-0.5 shrink-0 text-muted opacity-0 transition-opacity hover:text-text focus-visible:opacity-100 group-hover/title:opacity-100"
         >
           <Pencil className="h-4 w-4" />
         </Button>
@@ -89,7 +89,7 @@ export function EntryTitleEditor({
             if (event.key === 'Enter') save();
             if (event.key === 'Escape') setEditing(false);
           }}
-          className="h-11 text-xl font-semibold"
+          className="h-12 text-2xl font-semibold tracking-tight"
         />
         <Button
           type="button"
@@ -112,7 +112,9 @@ export function EntryTitleEditor({
         </Button>
       </div>
       {locked ? (
-        <p className="text-xs text-muted">{messages.entryDetail.titleLocked}</p>
+        <p className="font-mono text-xs text-muted">
+          {messages.entryDetail.titleLocked}
+        </p>
       ) : null}
     </div>
   );
@@ -169,16 +171,16 @@ export function EntryTagsEditor({
   }
 
   return (
-    <div className="space-y-2 pt-2">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-1.5 font-mono text-xs">
         {model.chips.map((chip) => (
           <span
             key={chip.name}
-            className="inline-flex items-center gap-1 rounded-md bg-surface2 py-1 pl-2 pr-1 text-xs text-muted"
+            className="inline-flex h-7 items-center gap-1 rounded-md border border-border pl-2 pr-1 text-muted"
           >
             <Link
               href={`${dashboardPath()}?tag=${encodeURIComponent(chip.name)}`}
-              className="hover:text-primary"
+              className="transition-colors hover:text-primary"
             >
               #{chip.name}
             </Link>
@@ -187,7 +189,7 @@ export function EntryTagsEditor({
               aria-label={chip.removeLabel}
               disabled={isPending}
               onClick={() => commit(tags.filter((name) => name !== chip.name))}
-              className="inline-flex h-4 w-4 items-center justify-center rounded-sm hover:bg-danger/10 hover:text-danger disabled:opacity-50"
+              className="inline-flex h-5 w-5 items-center justify-center rounded-sm text-muted/70 hover:bg-danger/10 hover:text-danger disabled:opacity-50"
             >
               <X className="h-3 w-3" />
             </button>
@@ -210,7 +212,7 @@ export function EntryTagsEditor({
             disabled={isPending || model.remaining === 0}
             placeholder={messages.entryDetail.tagPlaceholder}
             onChange={(event) => setDraft(event.target.value)}
-            className="h-7 w-28 px-2 text-xs"
+            className="h-7 w-28 border-dashed bg-transparent px-2 font-mono text-xs"
           />
           <Button
             type="submit"
@@ -225,7 +227,7 @@ export function EntryTagsEditor({
         </form>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 text-xs">
+      <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
         {model.addDisabledReason && draft.trim() ? (
           <p role="alert" className={cn('text-danger')}>
             {model.addDisabledReason}

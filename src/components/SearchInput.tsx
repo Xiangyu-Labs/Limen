@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { Loader2, Search, X } from 'lucide-react';
 import { SEARCH_QUERY_MAX_LENGTH } from '@/lib/validation';
 
@@ -10,6 +10,22 @@ export function normalizeSearchQuery(query: string) {
 }
 
 export const SEARCH_DEBOUNCE_MS = 300;
+
+/** `/` focuses search, unless the user is already typing somewhere. */
+export function isSearchShortcut(event: {
+  key: string;
+  metaKey: boolean;
+  ctrlKey: boolean;
+  altKey: boolean;
+  target: EventTarget | null;
+}) {
+  if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) {
+    return false;
+  }
+  const target = event.target as HTMLElement | null;
+  if (!target || typeof target.closest !== 'function') return true;
+  return !target.closest('input, textarea, select, [contenteditable="true"]');
+}
 
 export function buildSearchHref(currentUrl: string, query: string) {
   const normalized = normalizeSearchQuery(query);
@@ -39,6 +55,16 @@ function SearchForm({
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [isPending, startTransition] = useTransition();
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!isSearchShortcut(event)) return;
+      event.preventDefault();
+      inputRef.current?.focus();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
   useEffect(() => {
     const timeout = window.setTimeout(() => setQuery(initialQuery), 0);
     return () => window.clearTimeout(timeout);
@@ -69,18 +95,22 @@ function SearchForm({
       }}
       className={`relative w-full max-w-md ${className}`}
     >
-      <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
       <input
+        ref={inputRef}
         type="search"
         value={query}
         maxLength={SEARCH_QUERY_MAX_LENGTH}
         onChange={(event) => setQuery(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') event.currentTarget.blur();
+        }}
         placeholder={placeholder}
-        className="h-10 w-full rounded-md border border-border bg-surface pl-10 pr-12 text-sm text-text placeholder:text-muted/70 focus:outline-none focus:ring-2 focus:ring-ring/40"
+        className="h-9 w-full rounded-md border border-transparent bg-surface2 pl-9 pr-12 text-sm text-text transition-colors placeholder:text-muted hover:border-border focus:border-primary focus:bg-bg focus:outline-none focus:ring-2 focus:ring-primary/20 [&::-webkit-search-cancel-button]:hidden"
       />
       {isPending ? (
         <Loader2
-          className="absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted"
+          className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted"
           aria-label="正在搜索"
         />
       ) : query ? (
@@ -95,7 +125,14 @@ function SearchForm({
         >
           <X className="h-4 w-4" />
         </button>
-      ) : null}
+      ) : (
+        <kbd
+          aria-hidden
+          className="pointer-events-none absolute right-2.5 top-1/2 hidden h-5 min-w-5 -translate-y-1/2 items-center justify-center rounded-sm border border-border bg-bg px-1 font-mono text-[11px] text-muted md:inline-flex"
+        >
+          /
+        </kbd>
+      )}
     </form>
   );
 }

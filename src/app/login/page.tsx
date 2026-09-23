@@ -60,7 +60,7 @@ function LoginFields({
           autoComplete="current-password"
           autoFocus
           disabled={isPending || blocked}
-          className="h-12 px-12 text-center text-lg"
+          className="h-11 px-11 text-center font-mono text-base tracking-widest"
           placeholder="密码"
         />
         {/* Typing a long password blind on a phone means starting over on
@@ -83,17 +83,14 @@ function LoginFields({
         </button>
       </div>
       {error ? (
-        <div
-          role="alert"
-          className="rounded-md bg-danger/10 px-3 py-2 text-center text-sm text-danger"
-        >
+        <div role="alert" className="text-center font-mono text-xs text-danger">
           {error}
         </div>
       ) : null}
       <Button
         type="submit"
         disabled={isPending || blocked}
-        className="h-12 w-full"
+        className="h-11 w-full"
       >
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         {getLoginSubmitLabel(isPending)}
@@ -109,9 +106,9 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg p-6">
-      <form action={action} className="w-full max-w-xs space-y-5">
-        <h1 className="text-center text-2xl font-semibold tracking-tight text-text">
-          Limen
+      <form action={action} className="w-full max-w-xs space-y-4">
+        <h1 className="pb-4 text-center font-mono text-2xl font-semibold tracking-tight text-text">
+          limen<span className="animate-pulse text-primary">_</span>
         </h1>
         <LoginFields
           key={retryAfterSeconds}

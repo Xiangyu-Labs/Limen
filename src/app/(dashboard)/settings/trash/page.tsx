@@ -73,40 +73,49 @@ export default async function TrashPage() {
   );
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" asChild className="-ml-2">
+    <div className="mx-auto max-w-2xl space-y-8">
+      <div className="space-y-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          asChild
+          className="-ml-3 text-muted hover:text-text"
+        >
           <Link
             href={settingsPath()}
             aria-label={messages.trash.backToSettings}
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <h1 className="text-2xl font-semibold">{messages.trash.title}</h1>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {messages.trash.title}
+          </h1>
+          <p className="text-sm text-muted">{messages.trash.description}</p>
+        </div>
       </div>
-      <p className="text-sm text-muted">{messages.trash.description}</p>
 
       {model.isEmpty ? (
-        <div className="flex min-h-60 flex-col items-center justify-center rounded-lg border border-border bg-surface text-center">
-          <Trash2 className="h-6 w-6 text-muted" />
+        <div className="flex min-h-60 flex-col items-center justify-center rounded-lg border border-dashed border-border text-center">
+          <Trash2 className="h-5 w-5 text-muted" />
           <p className="mt-3 text-sm text-muted">{messages.trash.empty}</p>
         </div>
       ) : (
-        <ul className="overflow-hidden rounded-lg border border-border bg-surface">
+        <ul className="divide-y divide-border border-y border-border">
           {model.items.map((item) => (
             <li
               key={item.id}
-              className="flex flex-col gap-3 border-b border-border px-4 py-4 last:border-b-0 md:flex-row md:items-center md:px-5"
+              className="flex flex-col gap-3 py-5 md:flex-row md:items-center"
             >
               <div className="min-w-0 flex-1 space-y-1">
-                <h2 className="truncate text-base font-medium text-text">
+                <h2 className="truncate text-base font-semibold text-text">
                   {item.displayTitle}
                 </h2>
                 <p className="line-clamp-2 text-sm leading-6 text-muted">
                   {item.preview}
                 </p>
-                <p className="text-xs text-muted">
+                <p className="font-mono text-xs text-muted">
                   {item.deletedOn} · {item.expiresIn}
                 </p>
               </div>

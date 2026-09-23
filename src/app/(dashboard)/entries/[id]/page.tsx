@@ -3,7 +3,7 @@ import { getEntryById } from '@/lib/entry-data';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { MarkdownContent } from '@/components/MarkdownContent';
-import { ArrowLeft, Calendar, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { FormattedDate } from '@/components/FormattedDate';
 import { EntryDetailActions } from '@/components/EntryDetailActions';
 import { Button } from '@/components/ui/button';
@@ -74,7 +74,7 @@ export default async function EntryDetailPage({
   const viewModel = buildEntryDetailViewModel(entry, messages);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
+    <div className="mx-auto max-w-2xl space-y-8">
       {entry.aiStatus === 'pending' ? (
         <PendingAIRefresh entryId={entry.id} />
       ) : null}
@@ -83,10 +83,10 @@ export default async function EntryDetailPage({
           variant="ghost"
           size="icon"
           asChild
-          className="-ml-2 text-muted hover:text-primary"
+          className="-ml-3 text-muted hover:text-text"
         >
           <Link href={dashboardPath()} aria-label={messages.common.timeline}>
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
 
@@ -96,58 +96,53 @@ export default async function EntryDetailPage({
         />
       </div>
 
-      <article className="rounded-lg border border-border bg-surface">
-        <div className="space-y-8 p-5 md:p-8">
-          <header className="space-y-5">
-            <div className="flex flex-wrap items-center gap-3 text-sm text-muted">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-3.5 w-3.5" />
-                <FormattedDate date={entry.createdAt} />
-              </div>
-              {viewModel.statusLabel && (
-                <div
-                  className={
-                    viewModel.statusTone === 'danger'
-                      ? 'flex items-center gap-2 rounded-md border border-danger/20 px-2 py-1 text-danger'
-                      : 'flex items-center gap-2 rounded-md border border-primary/20 px-2 py-1 text-primary'
-                  }
-                >
-                  {entry.aiStatus === 'pending' ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-3.5 w-3.5" />
-                  )}
-                  {viewModel.statusLabel}
-                </div>
-              )}
+      <article className="space-y-10">
+        <header className="space-y-6">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-muted">
+            <FormattedDate date={entry.createdAt} />
+            {viewModel.statusLabel && (
+              <span
+                className={
+                  viewModel.statusTone === 'danger'
+                    ? 'inline-flex items-center gap-1.5 text-danger'
+                    : 'inline-flex items-center gap-1.5 text-primary'
+                }
+              >
+                {entry.aiStatus === 'pending' ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <span className="h-1.5 w-1.5 rounded-full bg-danger" />
+                )}
+                {viewModel.statusLabel}
+              </span>
+            )}
+          </div>
+
+          <EntryTitleEditor
+            entryId={entry.id}
+            title={viewModel.displayTitle}
+            locked={entry.titleLockedAt !== null}
+          />
+
+          {viewModel.summary && (
+            <div className="border-l-2 border-border pl-4">
+              <p className="font-mono text-xs text-muted">
+                {messages.entryDetail.aiSummary}
+              </p>
+              <p className="mt-1.5 text-sm leading-6 text-muted">
+                {viewModel.summary}
+              </p>
             </div>
+          )}
 
-            <div className="space-y-6">
-              <EntryTitleEditor
-                entryId={entry.id}
-                title={viewModel.displayTitle}
-                locked={entry.titleLockedAt !== null}
-              />
+          <EntryTagsEditor
+            entryId={entry.id}
+            tags={viewModel.tags}
+            locked={entry.tagsLockedAt !== null}
+          />
+        </header>
 
-              {viewModel.summary && (
-                <div className="border-l-2 border-primary pl-4">
-                  <p className="text-xs font-medium text-primary">
-                    {messages.entryDetail.aiSummary}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-muted">
-                    {viewModel.summary}
-                  </p>
-                </div>
-              )}
-
-              <EntryTagsEditor
-                entryId={entry.id}
-                tags={viewModel.tags}
-                locked={entry.tagsLockedAt !== null}
-              />
-            </div>
-          </header>
-
+        <div className="border-t border-border pt-10">
           <MarkdownContent>{entry.content}</MarkdownContent>
         </div>
       </article>

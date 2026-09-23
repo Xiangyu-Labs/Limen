@@ -57,7 +57,7 @@ function SegmentedControl({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="inline-flex max-w-full rounded-md border border-border bg-surface p-1">
+    <div className="inline-flex max-w-full rounded-md bg-surface2 p-0.5">
       {GROUPS[name].map(([option, label]) => (
         <label key={option} className="cursor-pointer">
           <input
@@ -68,7 +68,7 @@ function SegmentedControl({
             checked={option === value}
             onChange={() => onChange(option)}
           />
-          <span className="block rounded-sm px-3 py-1.5 text-sm text-muted transition-colors peer-checked:bg-surface2 peer-checked:font-medium peer-checked:text-text peer-focus-visible:ring-2 peer-focus-visible:ring-ring/40">
+          <span className="block rounded-sm px-3 py-1 text-sm text-muted transition-colors hover:text-text peer-checked:bg-bg peer-checked:font-medium peer-checked:text-text peer-checked:ring-1 peer-checked:ring-border peer-focus-visible:ring-2 peer-focus-visible:ring-ring/40">
             {label}
           </span>
         </label>
@@ -150,14 +150,15 @@ export function SettingsForm({
     undefined,
   );
   return (
-    <div className="space-y-10">
+    <div className="space-y-14">
       <section aria-labelledby="stats-heading" className="space-y-5">
-        <div className="border-b border-border pb-3">
-          <h2 id="stats-heading" className="text-lg font-semibold">
-            {messages.stats.heading}
-          </h2>
-        </div>
-        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <h2
+          id="stats-heading"
+          className="border-b border-border pb-2 font-mono text-xs text-muted"
+        >
+          {messages.stats.heading}
+        </h2>
+        <dl className="grid grid-cols-2 gap-y-6 sm:grid-cols-4">
           {(
             [
               [messages.stats.totalEntries, stats.totalEntries],
@@ -169,12 +170,9 @@ export function SettingsForm({
               ],
             ] as const
           ).map(([label, value]) => (
-            <div
-              key={label}
-              className="rounded-lg border border-border bg-surface px-4 py-3"
-            >
+            <div key={label}>
               <dt className="text-xs text-muted">{label}</dt>
-              <dd className="mt-1 text-xl font-semibold tabular-nums text-text">
+              <dd className="mt-1 font-mono text-3xl font-semibold tracking-tight tabular-nums text-text">
                 {value}
               </dd>
             </div>
@@ -183,11 +181,12 @@ export function SettingsForm({
       </section>
 
       <section aria-labelledby="appearance-heading" className="space-y-5">
-        <div className="border-b border-border pb-3">
-          <h2 id="appearance-heading" className="text-lg font-semibold">
-            外观与编辑
-          </h2>
-        </div>
+        <h2
+          id="appearance-heading"
+          className="border-b border-border pb-2 font-mono text-xs text-muted"
+        >
+          外观与编辑
+        </h2>
         <form action={action} className="space-y-6">
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium">主题</legend>
@@ -277,11 +276,12 @@ export function SettingsForm({
       </section>
 
       <section aria-labelledby="export-heading" className="space-y-5">
-        <div className="border-b border-border pb-3">
-          <h2 id="export-heading" className="text-lg font-semibold">
-            数据导出
-          </h2>
-        </div>
+        <h2
+          id="export-heading"
+          className="border-b border-border pb-2 font-mono text-xs text-muted"
+        >
+          数据导出
+        </h2>
         <form
           action="/api/export"
           method="get"
@@ -320,7 +320,7 @@ export function SettingsForm({
                       value={tag}
                       className="size-4 accent-primary"
                     />
-                    <span>{tag}</span>
+                    <span className="font-mono text-xs">#{tag}</span>
                   </label>
                 ))}
               </div>
@@ -334,11 +334,12 @@ export function SettingsForm({
       </section>
 
       <section aria-labelledby="trash-heading" className="space-y-5">
-        <div className="border-b border-border pb-3">
-          <h2 id="trash-heading" className="text-lg font-semibold">
-            {messages.trash.title}
-          </h2>
-        </div>
+        <h2
+          id="trash-heading"
+          className="border-b border-border pb-2 font-mono text-xs text-muted"
+        >
+          {messages.trash.title}
+        </h2>
         <p className="text-sm text-muted">{messages.trash.description}</p>
         <Button variant="secondary" asChild>
           <Link href={trashPath()}>
@@ -349,11 +350,12 @@ export function SettingsForm({
       </section>
 
       <section aria-labelledby="account-heading" className="space-y-5">
-        <div className="border-b border-border pb-3">
-          <h2 id="account-heading" className="text-lg font-semibold">
-            {messages.settings.signOutHeading}
-          </h2>
-        </div>
+        <h2
+          id="account-heading"
+          className="border-b border-border pb-2 font-mono text-xs text-muted"
+        >
+          {messages.settings.signOutHeading}
+        </h2>
         <LogoutButton />
       </section>
     </div>

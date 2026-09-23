@@ -16,11 +16,11 @@ export default function GlobalError({ reset }: { reset: () => void }) {
           justifyContent: 'center',
           gap: '1rem',
           fontFamily: 'system-ui, sans-serif',
-          background: '#f7f7f4',
-          color: '#20231f',
+          background: '#ffffff',
+          color: '#09090b',
         }}
       >
-        <p style={{ fontSize: '0.875rem', color: '#686d66' }}>
+        <p style={{ fontSize: '0.875rem', color: '#71717a' }}>
           页面出错了，请重试
         </p>
         <button
@@ -29,10 +29,10 @@ export default function GlobalError({ reset }: { reset: () => void }) {
           style={{
             height: '2.5rem',
             padding: '0 1rem',
-            borderRadius: '6px',
+            borderRadius: '4px',
             border: 'none',
             cursor: 'pointer',
-            background: '#2f6f55',
+            background: '#09090b',
             color: '#ffffff',
             fontSize: '0.875rem',
           }}

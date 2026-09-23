@@ -11,7 +11,7 @@ export default function DashboardError({
 }) {
   return (
     <div className="flex min-h-80 flex-col items-center justify-center text-center">
-      <AlertCircle className="h-6 w-6 text-danger" />
+      <AlertCircle className="h-5 w-5 text-danger" />
       <p className="mt-3 text-sm text-muted">加载失败，请重试</p>
       <Button
         type="button"

@@ -48,14 +48,19 @@ export default async function EditEntryPage({
   const model = buildEditEntryFormModel(entry);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-3">
+    <div className="mx-auto max-w-3xl space-y-4">
       <div className="flex items-center">
-        <Button variant="ghost" size="icon" asChild className="-ml-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          asChild
+          className="-ml-3 text-muted hover:text-text"
+        >
           <Link
             href={entryDetailPath(id)}
             aria-label={messages.common.timeline}
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
       </div>

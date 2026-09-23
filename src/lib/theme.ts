@@ -2,8 +2,8 @@ import type { Theme } from '@/lib/settings-core';
 
 // Keep in sync with the `--bg` custom properties in src/app/globals.css.
 // tests/theme-shell.test.mjs asserts both sides still agree.
-export const LIGHT_BACKGROUND = '#f7f7f4';
-export const DARK_BACKGROUND = '#161816';
+export const LIGHT_BACKGROUND = '#ffffff';
+export const DARK_BACKGROUND = '#0a0a0a';
 
 export type ThemeColor = { color: string; media?: string };
 

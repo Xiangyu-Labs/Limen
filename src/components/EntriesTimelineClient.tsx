@@ -4,9 +4,10 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import useSWR, { SWRConfig } from 'swr';
 import useSWRInfinite from 'swr/infinite';
-import { ArrowUp, Calendar, Loader2, Sparkles } from 'lucide-react';
+import { ArrowUp, Loader2, Sparkles } from 'lucide-react';
 import { bulkRegenerateEntryMetadata } from '@/lib/actions/entries';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import type { TimelineEntriesPage } from '@/lib/dashboard-data';
 import { messages } from '@/lib/messages';
 import { dashboardPath, entryDetailPath } from '@/lib/pathname';
@@ -64,7 +65,7 @@ function Highlighted({ text, query }: { text: string; query?: string }) {
     <>
       {splitHighlightSegments(text, query).map((segment, index) =>
         segment.matched ? (
-          <mark key={index} className="rounded-sm bg-primary/15 text-inherit">
+          <mark key={index} className="rounded-sm bg-primary/15 text-text">
             {segment.text}
           </mark>
         ) : (
@@ -281,14 +282,19 @@ function EntriesTimeline({ initialPage, query, tag }: EntriesTimelineProps) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-6">
       {failedIds.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-danger/20 bg-surface px-3 py-3">
-          <button
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-danger/30 px-4 py-3">
+          <span className="flex items-center gap-2 font-mono text-sm text-danger">
+            <span className="h-1.5 w-1.5 rounded-full bg-danger" />
+            {failedIds.length} {messages.common.failed}
+          </span>
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             disabled={isRetryPending}
             onClick={retryAllFailed}
-            className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {isRetryPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -296,52 +302,44 @@ function EntriesTimeline({ initialPage, query, tag }: EntriesTimelineProps) {
               <Sparkles className="h-4 w-4" />
             )}
             {messages.common.regenerate}
-          </button>
-          <span className="text-sm text-muted">
-            {failedIds.length} {messages.common.failed}
-          </span>
+          </Button>
         </div>
       ) : null}
 
-      <div className="space-y-5">
+      <div className="space-y-10">
         {sections.map((section) => (
-          <section key={section.key} className="space-y-2">
-            <h2 className="sticky top-16 z-[5] -mx-4 bg-bg/95 px-4 py-1 text-xs font-medium text-muted backdrop-blur md:-mx-6 md:px-6">
-              {section.label}
+          <section key={section.key}>
+            {/* The header wraps to two rows below md, with search on the second. */}
+            <h2 className="sticky top-[108px] z-[5] -mx-4 flex items-center gap-3 bg-bg/90 px-4 py-2 font-mono text-xs text-muted backdrop-blur md:top-16 md:-mx-6 md:px-6">
+              <span>{section.label}</span>
+              <span className="h-px flex-1 bg-border" />
+              <span className="tabular-nums">{section.entries.length}</span>
             </h2>
-            <div className="overflow-hidden rounded-lg border border-border bg-surface">
+            <div className="mt-2 space-y-1">
               {section.entries.map((entry) => (
                 <Link
                   key={entry.id}
                   href={entryDetailPath(entry.id)}
-                  className="group grid min-h-28 gap-3 border-b border-border px-4 py-4 [content-visibility:auto] [contain-intrinsic-size:auto_112px] last:border-b-0 hover:bg-surface2/60 active:bg-surface2 sm:grid-cols-[72px_minmax(0,1fr)] md:px-5"
+                  className="group -mx-3 grid gap-1.5 rounded-md px-3 py-4 transition-colors [content-visibility:auto] [contain-intrinsic-size:auto_104px] hover:bg-surface2/70 active:bg-surface2 sm:grid-cols-[64px_minmax(0,1fr)] sm:gap-4"
                 >
-                  <div className="flex items-center gap-2 text-sm text-muted sm:block sm:pt-0.5">
-                    <Calendar className="h-4 w-4 sm:hidden" />
-                    <span>
-                      {formatEntryCalendarDate(new Date(entry.createdAt))}
-                    </span>
+                  <div className="pt-0.5 font-mono text-xs tabular-nums text-muted sm:text-sm">
+                    {formatEntryCalendarDate(new Date(entry.createdAt))}
                   </div>
-                  <div className="min-w-0 space-y-2">
-                    <div className="min-w-0 space-y-1">
-                      <h3 className="truncate text-base font-semibold tracking-tight text-text group-hover:text-primary">
-                        <Highlighted text={entry.displayTitle} query={query} />
-                      </h3>
-                      <p className="line-clamp-2 text-sm leading-6 text-muted">
-                        <Highlighted
-                          text={entry.displaySummary}
-                          query={query}
-                        />
-                      </p>
-                    </div>
+                  <div className="min-w-0 space-y-1.5">
+                    <h3 className="truncate text-base font-semibold text-text transition-colors group-hover:text-primary">
+                      <Highlighted text={entry.displayTitle} query={query} />
+                    </h3>
+                    <p className="line-clamp-2 text-sm leading-6 text-muted">
+                      <Highlighted text={entry.displaySummary} query={query} />
+                    </p>
                     {entry.tags.length > 0 || entry.statusLabel ? (
-                      <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-muted">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5 font-mono text-xs text-muted">
                         {entry.statusLabel ? (
                           <span
                             className={
                               entry.isPending
-                                ? 'inline-flex shrink-0 items-center gap-1.5 rounded-md border border-primary/20 px-2 py-1 text-primary'
-                                : 'inline-flex shrink-0 items-center gap-1.5 rounded-md border border-danger/20 px-2 py-1 text-danger'
+                                ? 'inline-flex shrink-0 items-center gap-1.5 text-primary'
+                                : 'inline-flex shrink-0 items-center gap-1.5 text-danger'
                             }
                           >
                             {entry.isPending ? (
@@ -365,7 +363,7 @@ function EntriesTimeline({ initialPage, query, tag }: EntriesTimelineProps) {
                                 `${dashboardPath()}?tag=${encodeURIComponent(name)}`,
                               );
                             }}
-                            className="rounded-md bg-surface2 px-2 py-1 hover:text-primary"
+                            className="py-0.5 transition-colors hover:text-primary"
                           >
                             #{name}
                           </button>
@@ -382,7 +380,7 @@ function EntriesTimeline({ initialPage, query, tag }: EntriesTimelineProps) {
 
       <div
         ref={sentinelRef}
-        className="flex min-h-12 items-center justify-center"
+        className="flex min-h-16 items-center justify-center"
         aria-live="polite"
       >
         {error ? (
@@ -390,7 +388,7 @@ function EntriesTimeline({ initialPage, query, tag }: EntriesTimelineProps) {
             type="button"
             disabled={isValidating}
             onClick={() => void setSize(size)}
-            className="inline-flex h-10 items-center gap-2 rounded-md px-4 text-sm text-danger hover:bg-danger/10 disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-2 rounded-md px-3 font-mono text-xs text-danger hover:bg-danger/10 disabled:opacity-50"
           >
             {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {messages.dashboard.retryLoad}
@@ -400,7 +398,7 @@ function EntriesTimeline({ initialPage, query, tag }: EntriesTimelineProps) {
             type="button"
             disabled={isValidating}
             onClick={() => void setSize((current) => current + 1)}
-            className="inline-flex h-10 items-center gap-2 rounded-md px-4 text-sm text-muted hover:bg-surface2 hover:text-text disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-2 rounded-md px-3 font-mono text-xs text-muted hover:bg-surface2 hover:text-text disabled:opacity-50"
           >
             {isLoadingMore ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -408,8 +406,8 @@ function EntriesTimeline({ initialPage, query, tag }: EntriesTimelineProps) {
             {messages.dashboard.loadMore}
           </button>
         ) : (
-          <span className="text-xs text-muted">
-            {messages.dashboard.endOfTimeline}
+          <span className="font-mono text-xs text-muted/70">
+            — {messages.dashboard.endOfTimeline} —
           </span>
         )}
       </div>
@@ -425,9 +423,9 @@ function EntriesTimeline({ initialPage, query, tag }: EntriesTimelineProps) {
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           aria-label={messages.dashboard.backToTop}
           title={messages.dashboard.backToTop}
-          className="fixed bottom-6 right-6 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-muted shadow-lg transition-colors hover:text-primary"
+          className="fixed bottom-6 right-6 z-20 inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-bg text-muted transition-colors hover:border-text/30 hover:text-text"
         >
-          <ArrowUp className="h-5 w-5" />
+          <ArrowUp className="h-4 w-4" />
         </button>
       ) : null}
     </div>
