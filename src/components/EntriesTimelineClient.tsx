@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
-import useSWR from 'swr';
+import useSWR, { SWRConfig } from 'swr';
 import useSWRInfinite from 'swr/infinite';
 import { ArrowUp, Calendar, Loader2, Sparkles } from 'lucide-react';
 import { bulkRegenerateEntryMetadata } from '@/lib/actions/entries';
@@ -75,15 +75,31 @@ function Highlighted({ text, query }: { text: string; query?: string }) {
   );
 }
 
-export function EntriesTimelineClient({
-  initialPage,
-  query,
-  tag,
-}: {
+type EntriesTimelineProps = {
   initialPage: TimelineEntriesPage;
   query?: string;
   tag?: string;
-}) {
+};
+
+/**
+ * The server renders the first page fresh on every visit, so that page is the
+ * truth, not whatever SWR remembers from the last visit.
+ *
+ * SWR's default cache is module-global and outlives client navigation. With
+ * `revalidateFirstPage: false`, a remount served page 0 from that cache and
+ * ignored `initialPage`: a new entry did not show up after saving, and edits,
+ * restores and tag changes made elsewhere stayed invisible until a reload. A
+ * cache per mount lets `fallbackData` be the fresh server page instead.
+ */
+export function EntriesTimelineClient(props: EntriesTimelineProps) {
+  return (
+    <SWRConfig value={{ provider: () => new Map() }}>
+      <EntriesTimeline {...props} />
+    </SWRConfig>
+  );
+}
+
+function EntriesTimeline({ initialPage, query, tag }: EntriesTimelineProps) {
   const router = useRouter();
   const sentinelRef = useRef<HTMLDivElement>(null);
   const pollingSchedulerRef = useRef<AdaptiveAIPollingScheduler | null>(null);
@@ -105,9 +121,22 @@ export function EntriesTimelineClient({
       fetchTimelinePage,
       {
         fallbackData: [initialPage],
+        // The server just rendered page 0; fetching it again on mount is waste.
+        revalidateOnMount: false,
         revalidateFirstPage: false,
       },
     );
+
+  // router.refresh(), or a server action that revalidated this page, hands
+  // down a new first page without remounting. Refetch every loaded page so the
+  // later ones agree with it: an entry can move between pages when its date
+  // changes.
+  const renderedPageRef = useRef(initialPage);
+  useEffect(() => {
+    if (renderedPageRef.current === initialPage) return;
+    renderedPageRef.current = initialPage;
+    void mutate();
+  }, [initialPage, mutate]);
 
   const timelineEntries = useMemo(() => mergeTimelinePages(data), [data]);
   const sections = useMemo(

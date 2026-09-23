@@ -6,13 +6,11 @@ import { useRouter } from 'next/navigation';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import { Loader2, Pencil, Sparkles, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { mutate } from 'swr';
 import {
   deleteEntry,
   regenerateEntryMetadata,
   restoreEntry,
 } from '@/lib/actions/entries';
-import { isTimelineCacheKey } from '@/lib/timeline/cache';
 import {
   UNDO_TOAST_DURATION_MS,
   buildDeletedToastMessage,
@@ -52,15 +50,8 @@ export function EntryDetailActions({
     });
   }
 
-  // Both a delete and an undo have to drop the cached timeline pages.
-  // EntriesTimelineClient uses revalidateFirstPage: false against a
-  // module-global SWR cache, so page 0 would otherwise come back unchanged.
-  const invalidateTimeline = () =>
-    mutate(isTimelineCacheKey, undefined, { revalidate: true });
-
   const undo = createUndoHandler({
     restore: restoreEntry,
-    invalidate: invalidateTimeline,
     refresh: () => router.refresh(),
     notifySuccess: (message) => toast.success(message),
     notifyError: (message) => toast.error(message),
@@ -76,7 +67,6 @@ export function EntryDetailActions({
           return;
         }
         setDeleteDialogOpen(false);
-        await invalidateTimeline();
         router.replace(dashboardPath());
         router.refresh();
         // AppToaster lives in the root layout, so this survives the navigation

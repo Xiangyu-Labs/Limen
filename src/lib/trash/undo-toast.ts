@@ -13,7 +13,6 @@ export function buildDeletedToastMessage(
 
 type UndoDeps = {
   restore: (id: string) => Promise<ActionResult<{ id: string }>>;
-  invalidate: () => Promise<unknown>;
   refresh: () => void;
   notifySuccess: (message: string) => void;
   notifyError: (message: string) => void;
@@ -27,7 +26,6 @@ type UndoDeps = {
  */
 export function createUndoHandler({
   restore,
-  invalidate,
   refresh,
   notifySuccess,
   notifyError,
@@ -40,7 +38,8 @@ export function createUndoHandler({
         notifyError(result.error);
         return;
       }
-      await invalidate();
+      // The timeline refetches its loaded pages when the server hands it a
+      // new first page, so a refresh is all the restored entry needs.
       refresh();
       notifySuccess(copy.trash.entryRestored);
     } catch {

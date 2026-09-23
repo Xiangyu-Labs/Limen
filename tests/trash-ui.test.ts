@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { eq } from 'drizzle-orm';
-import { isTimelineCacheKey } from '@/lib/timeline/cache';
 import {
   UNDO_TOAST_DURATION_MS,
   buildDeletedToastMessage,
@@ -29,18 +28,6 @@ function actions(db: never) {
   });
 }
 
-test('timeline cache keys are recognised, status keys are not', () => {
-  assert.equal(isTimelineCacheKey('/api/dashboard/entries?'), true);
-  assert.equal(isTimelineCacheKey('/api/dashboard/entries?q=hi'), true);
-  assert.equal(isTimelineCacheKey('/api/dashboard/entries'), true);
-  assert.equal(isTimelineCacheKey(['/api/dashboard/entries?cursor=x']), true);
-  // Invalidating the poll would restart the AI status loop for no reason.
-  assert.equal(isTimelineCacheKey('/api/dashboard/entries/status'), false);
-  assert.equal(isTimelineCacheKey('/api/export'), false);
-  assert.equal(isTimelineCacheKey(null), false);
-  assert.equal(isTimelineCacheKey(undefined), false);
-});
-
 test('the delete toast names the entry when it has a title', () => {
   assert.equal(
     buildDeletedToastMessage('周末的雨', messages),
@@ -50,14 +37,13 @@ test('the delete toast names the entry when it has a title', () => {
   assert.equal(buildDeletedToastMessage('   ', messages), '记录已移至回收站');
 });
 
-test('undo restores, drops the cached pages, then refreshes', async () => {
+test('undo restores, then refreshes', async () => {
   const calls: string[] = [];
   const undo = createUndoHandler({
     restore: async (id) => {
       calls.push(`restore:${id}`);
       return { ok: true, data: { id } };
     },
-    invalidate: async () => calls.push('invalidate'),
     refresh: () => calls.push('refresh'),
     notifySuccess: (message) => calls.push(`success:${message}`),
     notifyError: (message) => calls.push(`error:${message}`),
@@ -65,20 +51,12 @@ test('undo restores, drops the cached pages, then refreshes', async () => {
   });
 
   await undo('entry-1');
-  // Order matters: refreshing before invalidating would re-render against the
-  // stale cache.
-  assert.deepEqual(calls, [
-    'restore:entry-1',
-    'invalidate',
-    'refresh',
-    'success:记录已恢复',
-  ]);
+  assert.deepEqual(calls, ['restore:entry-1', 'refresh', 'success:记录已恢复']);
 });
 
 test('undo surfaces a failed restore and a thrown one', async () => {
   const errors: string[] = [];
   const base = {
-    invalidate: async () => {},
     refresh: () => {},
     notifySuccess: () => {},
     notifyError: (message: string) => errors.push(message),
@@ -102,7 +80,7 @@ test('undo surfaces a failed restore and a thrown one', async () => {
 test('deleting from the detail page offers undo outside the transition', () => {
   const source = read('src/components/EntryDetailActions.tsx');
   assert.match(source, /restoreEntry/);
-  assert.match(source, /isTimelineCacheKey/);
+  assert.match(source, /router\.refresh\(\)/);
   assert.match(source, /action: \{/);
   assert.match(source, /UNDO_TOAST_DURATION_MS/);
   // The dialog no longer claims the delete is irreversible.
