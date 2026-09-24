@@ -68,12 +68,18 @@ export function normalizeAIStatus(value: string | null): AIStatus {
     : null;
 }
 
+/**
+ * Retries stay on. SWR's poll timer skips a key whose last request errored,
+ * and only a successful request clears the error, so with retries off one
+ * failed status request (a cold start, a flaky mobile network) froze "处理中"
+ * on screen until the tab happened to regain focus. Pair these options with
+ * an onErrorRetry that calls AdaptiveAIPollingScheduler.retry.
+ */
 export const AI_POLL_SWR_OPTIONS = {
   refreshWhenHidden: false,
   refreshWhenOffline: false,
   revalidateOnFocus: true,
   revalidateOnReconnect: true,
-  shouldRetryOnError: false,
 } as const;
 
 export class TerminalAIStatusRefreshGuard {
@@ -108,6 +114,11 @@ export class AdaptiveAIPollingScheduler {
       this.activityStartedAt = now;
     }
 
+    return this.retryInterval(now);
+  }
+
+  /** The current interval, without registering a change in pending IDs. */
+  retryInterval(now = Date.now()) {
     const elapsed = now - (this.activityStartedAt ?? now);
     const baseInterval =
       elapsed < FAST_WINDOW_MS
@@ -126,6 +137,11 @@ export class AdaptiveAIPollingScheduler {
 
   recordSuccess() {
     this.consecutiveFailures = 0;
+  }
+
+  /** Runs a failed poll again after the backed-off interval. */
+  retry(run: () => void) {
+    setTimeout(run, this.retryInterval());
   }
 }
 

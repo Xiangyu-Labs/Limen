@@ -3,19 +3,24 @@ import assert from 'node:assert/strict';
 import { createElement, type ReactNode } from 'react';
 import { JSDOM } from 'jsdom';
 import type { TimelineEntriesPage } from '@/lib/dashboard-data';
+import type { EntryStatusPatch } from '@/lib/ai/polling';
 import { messages } from '@/lib/messages';
 
-function page(ids: string[], nextCursor: string | null): TimelineEntriesPage {
+function page(
+  ids: string[],
+  nextCursor: string | null,
+  pendingIds: string[] = [],
+): TimelineEntriesPage {
   return {
     items: ids.map((id) => ({
       id,
       displayTitle: `title-${id}`,
       displaySummary: id,
-      statusLabel: null,
+      statusLabel: pendingIds.includes(id) ? messages.common.processing : null,
       statusTone: 'muted',
       tags: [],
       createdAt: '2026-09-01T00:00:00.000Z',
-      isPending: false,
+      isPending: pendingIds.includes(id),
     })),
     pageInfo: { hasMore: nextCursor !== null, nextCursor, limit: 20 },
   };
@@ -30,7 +35,8 @@ after(() => dom.window.close());
 
 /**
  * Renders the real timeline against a fake /api/dashboard/entries, where the
- * first page is whatever `server.firstPage` currently holds.
+ * first page is whatever `server.firstPage` currently holds, and a fake status
+ * endpoint that answers from `server.status`.
  */
 async function setup() {
   Object.assign(globalThis, {
@@ -49,10 +55,18 @@ async function setup() {
     configurable: true,
   });
 
-  const server = { firstPage: page(['old'], 'c1') };
+  const server = {
+    firstPage: page(['old'], 'c1'),
+    status: (): Response => Response.json({ entries: [] }),
+    statusRequests: 0,
+  };
   const originalFetch = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = new URL(String(input), 'http://localhost');
+    if (url.pathname === '/api/dashboard/entries/status') {
+      server.statusRequests += 1;
+      return server.status();
+    }
     const body = url.searchParams.get('cursor')
       ? page(['older'], null)
       : server.firstPage;
@@ -133,6 +147,44 @@ test('a server refresh refetches the pages the timeline already loaded', async (
     });
     assert.ok(await t.screen.findByText('title-restored'));
     assert.ok(t.screen.getByText('title-older'));
+  } finally {
+    t.teardown();
+  }
+});
+
+function done(id: string, title: string): EntryStatusPatch {
+  return { id, aiStatus: 'done', title, summary: 'summary', tags: [] };
+}
+
+test('an entry saved as pending shows its AI title once processing ends', async () => {
+  const t = await setup();
+  try {
+    // Straight after saving: the server renders the entry as pending, and by
+    // the time the timeline polls, the AI has finished.
+    t.server.status = () =>
+      Response.json({ entries: [done('new', 'AI title')] });
+    t.render(t.timeline(page(['new', 'old'], 'c1', ['new'])));
+
+    assert.ok(await t.screen.findByText('AI title'));
+    assert.equal(t.screen.queryByText(messages.common.processing), null);
+  } finally {
+    t.teardown();
+  }
+});
+
+test('one failed status request does not stop the polling', async () => {
+  const t = await setup();
+  try {
+    t.server.status = () => {
+      t.server.status = () =>
+        Response.json({ entries: [done('new', 'AI title')] });
+      return new Response('cold start', { status: 500 });
+    };
+    t.render(t.timeline(page(['new', 'old'], 'c1', ['new'])));
+
+    // The retry waits out the backed-off interval: 3s doubled once.
+    assert.ok(await t.screen.findByText('AI title', {}, { timeout: 10_000 }));
+    assert.equal(t.server.statusRequests, 2);
   } finally {
     t.teardown();
   }

@@ -39,6 +39,8 @@ export function PendingAIRefresh({ entryId }: { entryId: string }) {
         ),
       ...AI_POLL_SWR_OPTIONS,
       onError: () => pollingScheduler.recordFailure(),
+      onErrorRetry: (_error, _key, _config, revalidate, options) =>
+        pollingScheduler.retry(() => revalidate(options)),
       onSuccess: (latestData) => {
         pollingScheduler.recordSuccess();
         if (refreshGuard.shouldRefresh(latestData.aiStatus)) router.refresh();

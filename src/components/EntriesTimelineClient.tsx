@@ -8,7 +8,7 @@ import { ArrowUp, Loader2, Sparkles } from 'lucide-react';
 import { bulkRegenerateEntryMetadata } from '@/lib/actions/entries';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import type { TimelineEntriesPage } from '@/lib/dashboard-data';
+import type { TimelineEntriesPage, TimelineEntry } from '@/lib/dashboard-data';
 import { messages } from '@/lib/messages';
 import { dashboardPath, entryDetailPath } from '@/lib/pathname';
 import { useRouter } from 'next/navigation';
@@ -139,6 +139,21 @@ function EntriesTimeline({ initialPage, query, tag }: EntriesTimelineProps) {
     void mutate();
   }, [initialPage, mutate]);
 
+  // fallbackData is displayed but never written to the cache, so until the
+  // first fetch an updater is handed `undefined`. Mapping over that returned
+  // nothing: a finished entry's status patch was dropped and it sat on
+  // "处理中" until a reload. Start from what is on screen instead.
+  function updateEntries(update: (items: TimelineEntry[]) => TimelineEntry[]) {
+    return mutate(
+      (pages) =>
+        (pages ?? [initialPage]).map((page) => ({
+          ...page,
+          items: update(page.items),
+        })),
+      { revalidate: false },
+    );
+  }
+
   const timelineEntries = useMemo(() => mergeTimelinePages(data), [data]);
   const sections = useMemo(
     () => groupTimelineEntriesByPeriod(timelineEntries),
@@ -201,15 +216,12 @@ function EntriesTimeline({ initialPage, query, tag }: EntriesTimelineProps) {
       refreshInterval: () => pollingScheduler.getInterval(pendingIds),
       ...AI_POLL_SWR_OPTIONS,
       onError: () => pollingScheduler.recordFailure(),
+      onErrorRetry: (_error, _key, _config, revalidate, options) =>
+        pollingScheduler.retry(() => revalidate(options)),
       onSuccess: (response) => {
         pollingScheduler.recordSuccess();
-        void mutate(
-          (pages) =>
-            pages?.map((page) => ({
-              ...page,
-              items: applyEntryStatusPatches(page.items, response.entries),
-            })),
-          { revalidate: false },
+        void updateEntries((items) =>
+          applyEntryStatusPatches(items, response.entries),
         );
       },
     },
@@ -250,22 +262,17 @@ function EntriesTimeline({ initialPage, query, tag }: EntriesTimelineProps) {
     if (failedIds.length === 0) return;
     startRetryTransition(async () => {
       try {
-        await mutate(
-          (pages) =>
-            pages?.map((page) => ({
-              ...page,
-              items: page.items.map((entry) =>
-                failedIdSet.has(entry.id)
-                  ? {
-                      ...entry,
-                      statusLabel: messages.common.processing,
-                      statusTone: 'muted' as const,
-                      isPending: true,
-                    }
-                  : entry,
-              ),
-            })),
-          { revalidate: false },
+        await updateEntries((items) =>
+          items.map((entry) =>
+            failedIdSet.has(entry.id)
+              ? {
+                  ...entry,
+                  statusLabel: messages.common.processing,
+                  statusTone: 'muted' as const,
+                  isPending: true,
+                }
+              : entry,
+          ),
         );
         const result = await bulkRegenerateEntryMetadata(failedIds);
         if (!result.ok) {

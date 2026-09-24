@@ -147,7 +147,21 @@ test('SWR polling pauses while hidden or offline and revalidates on recovery', (
   assert.equal(AI_POLL_SWR_OPTIONS.refreshWhenOffline, false);
   assert.equal(AI_POLL_SWR_OPTIONS.revalidateOnFocus, true);
   assert.equal(AI_POLL_SWR_OPTIONS.revalidateOnReconnect, true);
-  assert.equal(AI_POLL_SWR_OPTIONS.shouldRetryOnError, false);
+});
+
+test('a failed poll is retried on the backed-off interval', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const scheduler = new AdaptiveAIPollingScheduler();
+  scheduler.getInterval(['entry']);
+  scheduler.recordFailure();
+
+  let retried = 0;
+  scheduler.retry(() => (retried += 1));
+
+  t.mock.timers.tick(AI_POLL_FAST_INTERVAL_MS * 2 - 1);
+  assert.equal(retried, 0);
+  t.mock.timers.tick(1);
+  assert.equal(retried, 1);
 });
 
 test('entry detail refreshes once when pending reaches either terminal state', () => {
